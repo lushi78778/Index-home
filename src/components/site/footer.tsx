@@ -1,0 +1,52 @@
+import Link from 'next/link'
+import { siteConfig } from '@/config/site'
+
+export function Footer() {
+  const icp = siteConfig.record?.icp
+  const police = siteConfig.record?.police
+  return (
+    <footer className="relative border-t py-8 text-center text-sm text-muted-foreground">
+      <div className="container mx-auto px-4 space-y-2">
+        <div>© {new Date().getFullYear()} xray.top · 透视实验室 · 保留所有权利</div>
+        {/* 联系入口放在底部 */}
+        <div>
+          <Link href="/contact" className="underline">联系</Link>
+          {siteConfig.social?.email && (
+            <span className="ml-2">· 邮箱：<a className="underline" href={`mailto:${siteConfig.social.email}`}>{siteConfig.social.email}</a></span>
+          )}
+        </div>
+        {/* 备案信息 */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {icp && (
+            <a href={icp.url} target="_blank" rel="noreferrer" className="hover:text-foreground">
+              {icp.number}
+            </a>
+          )}
+          {police && (
+            <a href={police.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-foreground">
+              {/* 简易公安盾牌图标 */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12 2l7 3v6c0 5-3.5 9.74-7 11-3.5-1.26-7-6-7-11V5l7-3z"/>
+              </svg>
+              <span>{police.number}</span>
+            </a>
+          )}
+        </div>
+      </div>
+      {/* 悬挂式公安备案（可选） */}
+      {police && (
+        <a
+          href={police.url}
+          target="_blank"
+          rel="noreferrer"
+          className="fixed bottom-4 right-4 inline-flex items-center gap-1 rounded bg-background/70 px-2 py-1 text-xs shadow hover:bg-background"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M12 2l7 3v6c0 5-3.5 9.74-7 11-3.5-1.26-7-6-7-11V5l7-3z"/>
+          </svg>
+          <span>{police.number}</span>
+        </a>
+      )}
+    </footer>
+  )
+}
