@@ -35,6 +35,9 @@ export const mdxComponents = {
           width={Number(props.width)}
           height={Number(props.height)}
           className="rounded-md"
+          placeholder="blur"
+          blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMScgaGVpZ2h0PScxJyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnLz4="
+          sizes="(max-width: 768px) 100vw, 768px"
         />
       )
     }

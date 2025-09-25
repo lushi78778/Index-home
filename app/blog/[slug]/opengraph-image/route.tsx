@@ -2,7 +2,8 @@ import { ImageResponse } from '@vercel/og'
 import { getPostBySlug } from '@/lib/content'
 import { siteConfig } from '@/config/site'
 
-export const runtime = 'edge'
+// Use Node.js runtime because this route reads local content via fs/path
+export const runtime = 'nodejs'
 
 // 为每篇文章动态生成 OG 图片（标题 + 站点名 + 日期）
 export async function GET(_: Request, { params }: { params: { slug: string } }) {

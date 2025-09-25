@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import MiniSearch from 'minisearch'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 type Doc = { id: string; title: string; slug: string; type: 'post' | 'project'; excerpt?: string; tags?: string[] }
 
@@ -20,6 +21,7 @@ export function useCommand() {
 }
 
 export function CommandProvider({ children }: { children: React.ReactNode }) {
+  const t = useTranslations()
   const [visible, setVisible] = useState(false)
   const [query, setQuery] = useState('')
   const [docs, setDocs] = useState<Doc[]>([])
@@ -77,7 +79,7 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="搜索文章或项目…"
+                placeholder={t('search.placeholder')}
                 className="h-10 w-full bg-transparent px-2 outline-none"
                 aria-label="搜索"
               />

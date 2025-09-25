@@ -1,48 +1,88 @@
 {
   "compilerOptions": {
+    // "target": "ES2022": 指定 TypeScript 编译后输出的 JavaScript 版本为 ES2022。
+    // 这确保了代码能在支持该版本的现代浏览器和 Node.js 环境中运行。
     "target": "ES2022",
-    "lib": [
-      "ES2023",
-      "DOM",
-      "DOM.Iterable"
-    ],
+
+    // "lib": [...]：指定编译时需要包含的库文件。
+    // "ES2023": 包含最新的 ECMAScript 特性。
+    // "DOM", "DOM.Iterable": 包含了浏览器环境的类型定义，如 `window`, `document` 等，以及 DOM 元素的迭代器。
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+
+    // "allowJs": false: 禁止在项目中混合使用 JavaScript 文件。强制所有代码都使用 TypeScript，以保证类型安全。
     "allowJs": false,
+
+    // "skipLibCheck": true: 跳过对声明文件（.d.ts）的类型检查。
+    // 这可以加快编译速度，因为我们通常信任第三方库的类型定义是正确的。
     "skipLibCheck": true,
+
+    // "strict": true: 启用所有严格类型检查选项。
+    // 这是保证代码质量和减少潜在错误的最佳实践，包括 `noImplicitAny`, `strictNullChecks` 等。
     "strict": true,
+
+    // "noEmit": true: 不生成输出文件（如 .js, .js.map）。
+    // 在 Next.js 项目中，实际的编译和打包工作由 Next.js（内部使用 Babel）完成，
+    // tsc 只负责类型检查。
     "noEmit": true,
+
+    // "esModuleInterop": true: 允许通过 `import React from 'react'` 的方式导入 CommonJS 模块，
+    // 提高了与旧式模块的兼容性。
     "esModuleInterop": true,
+
+    // "module": "ESNext": 指定模块系统为最新的 ECMAScript 模块标准。
     "module": "ESNext",
+
+    // "moduleResolution": "Bundler": 模拟现代打包工具（如 Webpack, Vite）的模块解析策略。
+    // 这是 TypeScript 5.0+ 推荐的选项，能更好地处理条件导出等新特性。
     "moduleResolution": "Bundler",
+
+    // "resolveJsonModule": true: 允许直接导入 JSON 文件，并自动为其提供类型。
     "resolveJsonModule": true,
+
+    // "isolatedModules": true: 确保每个文件都可以被安全地独立编译。
+    // 这是 Babel 等转换器处理 TypeScript 文件的前提条件。
     "isolatedModules": true,
+
+    // "jsx": "preserve": 在编译时保留 JSX 语法，不将其转换为 `React.createElement` 调用。
+    // 转换工作将交由 Next.js 的构建流程处理，这样可以利用 Next.js 的 JSX 优化。
     "jsx": "preserve",
+
+    // "incremental": true: 启用增量编译。
+    // TypeScript 会在 `.tsbuildinfo` 文件中存储上次编译的信息，再次编译时只处理有变动的文件，从而加快速度。
     "incremental": true,
+
+    // "baseUrl": ".": 设置模块解析的基础目录为项目根目录。
+    // 这使得下面的 `paths` 别名配置能够生效。
     "baseUrl": ".",
+
+    // "paths": {...}: 配置路径别名，简化模块导入。
+    // 例如，可以用 `@/components/` 代替复杂的相对路径 `../../src/components/`。
     "paths": {
-      "@/components/*": [
-        "./src/components/*"
-      ],
-      "@/lib/*": [
-        "./src/lib/*"
-      ],
-      "@/content/*": [
-        "./content/*"
-      ],
-      "@/config/*": [
-        "./src/config/*"
-      ]
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/content/*": ["./content/*"],
+      "@/config/*": ["./src/config/*"],
+      "@/i18n/*": ["./src/i18n/*"]
     },
-    "types": [
-      "@types/node",
-      "@types/react",
-      "@types/react-dom"
-    ],
+
+    // "types": [...]：明确指定需要包含在全局作用域中的类型定义包。
+    // 如果不指定，TypeScript 会自动包含 `node_modules/@types` 下的所有包。
+    "types": ["@types/node", "@types/react", "@types/react-dom"],
+
+    // "plugins": [...]：配置 TypeScript 语言服务插件。
+    // "name": "next" 是 Next.js 提供的插件，用于在 VS Code 等编辑器中提供更好的类型提示和自动补全，
+    // 例如，它能理解 `page.tsx` 等文件的特定导出。
     "plugins": [
       {
         "name": "next"
       }
     ]
   },
+
+  // "include": [...]：指定需要被 TypeScript 编译器处理的文件和目录。
+  // "next-env.d.ts": Next.js 自动生成的环境类型定义。
+  // "**/*.ts", "**/*.tsx", "**/*.mdx": 包含项目下所有的 TypeScript 和 MDX 文件。
+  // ".next/types/**/*.ts": 包含 Next.js 在构建过程中生成的类型文件，如类型化的路由。
   "include": [
     "next-env.d.ts",
     "**/*.ts",
@@ -50,7 +90,8 @@
     "**/*.mdx",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+
+  // "exclude": [...]：指定需要从编译中排除的文件和目录。
+  // "node_modules": 排除所有第三方依赖，避免不必要的检查和编译。
+  "exclude": ["node_modules"]
 }

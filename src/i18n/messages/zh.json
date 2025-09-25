@@ -1,0 +1,18 @@
+{
+  "nav": {
+    "home": "首页",
+    "blog": "博客",
+    "projects": "项目",
+    "about": "关于",
+    "contact": "联系",
+    "search": "搜索",
+    "now": "Now",
+    "uses": "Uses"
+  },
+  "site": {
+    "title": "xray.top 透视实验室"
+  },
+  "search": {
+    "placeholder": "搜索文章或项目…"
+  }
+}
