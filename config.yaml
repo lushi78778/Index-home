@@ -1,10 +1,22 @@
 # 站点与运行时配置（集中式）
+#
+# 使用方式：
+# 1) 修改本文件的 site 与 runtime/env 配置
+# 2) 运行 `make dev` 或 `npm run config`，脚本会：
+#    - 生成/覆盖 src/config/site.ts（供应用内导入使用）
+#    - 合并生成 .env.local（以本文件的 runtime.env 为准覆盖同名键）
+# 3) .env.local 已被忽略，不会提交到 Git
+#
+# 说明：
+# - 以 NEXT_PUBLIC_ 开头的变量为前端可见（public），勿写入敏感信息
+# - 其它变量为服务端使用（secret），请妥善保密
 
 site:
   # 基础信息
   name: "xray.top 透视实验室"
   shortName: "xray.top"
   description: "一个现代化、内容驱动的个人主页，集成了博客、项目展示、笔记等功能。"
+  # 站点对外访问的完整 URL（用于 Canonical/OG/Sitemap/Robots 等），务必使用 https
   url: "https://example.com"
 
   # 作者信息
@@ -33,23 +45,45 @@ site:
 
 # 运行时配置（Makefile 与脚本会读取这些值）
 runtime:
+  # 本地或容器内访问服务时的主机与端口，仅用于 Makefile 里的工具任务
   host: "localhost"
   port: 3000
+  # ISR 按需刷新接口的密钥（/api/revalidate?secret=...），生产环境请替换为强随机值
   revalidateSecret: "dev-secret"
-  plausibleDomain: ""  # 若使用 Plausible，填入你的域名（用于注入脚本）
+  # 若使用 Plausible 分析，这里填你的站点域名（如 xray.top），否则留空不注入脚本
+  plausibleDomain: ""
   # 统一环境变量（生成到 .env.local）
   env:
-    NEXT_PUBLIC_SITE_URL: "https://example.com" # 若不填，默认使用 site.url
+    # ——— 站点与可见配置（前端可读取，勿存敏感信息） ———
+    # 站点对外 URL（默认会取 site.url），用于前端构造链接与 SEO 信息
+    NEXT_PUBLIC_SITE_URL: "https://example.com"
+    # Plausible 分析的域名，配置后才会注入脚本；不使用可留空
     NEXT_PUBLIC_PLAUSIBLE_DOMAIN: ""
+
+    # ——— 邮件发送（Resend）与联系表单 ———
+    # Resend API Key（服务端密钥），用于发送邮件（如联系表单/订阅确认）；生产必须配置
     RESEND_API_KEY: ""
+    # 联系表单收件地址（支持多收件人用逗号分隔），例如：me@example.com,other@example.com
     CONTACT_TO_EMAIL: ""
+    # revalidate 接口的密钥（与 runtime.revalidateSecret 一致即可），用于服务端 ISR 刷新
     REVALIDATE_SECRET: "dev-secret"
+
+    # ——— Upstash Redis（限流/缓存/存储） ———
+    # Upstash REST URL 与 Token，若启用限流/缓存等功能需配置，否则留空
     UPSTASH_REDIS_REST_URL: ""
     UPSTASH_REDIS_REST_TOKEN: ""
+
+    # ——— Giscus 评论系统（GitHub Discussions） ———
+    # 仓库（owner/repo）、仓库 ID、分类名、分类 ID；必须成套配置
     NEXT_PUBLIC_GISCUS_REPO: ""
     NEXT_PUBLIC_GISCUS_REPO_ID: ""
     NEXT_PUBLIC_GISCUS_CATEGORY: ""
     NEXT_PUBLIC_GISCUS_CATEGORY_ID: ""
+
+    # ——— Buttondown 邮件订阅 ———
+    # Buttondown API Token（服务端密钥），用于订阅/双重确认等；使用该服务时必须配置
     BUTTONDOWN_API_TOKEN: ""
+    # 是否启用双重确认（默认 true），生产环境建议启用
     BUTTONDOWN_DOUBLE_OPT_IN: true
+    # 订阅邮件的发件人（显示名 <地址>），例如："XRAY <noreply@example.com>"
     NEWSLETTER_FROM: ""
