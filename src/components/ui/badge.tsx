@@ -1,12 +1,11 @@
 import React from 'react'
 
-export function Badge({ children, variant = 'default' }: { children: React.ReactNode; variant?: 'default' | 'secondary' | 'outline' }) {
+export function Badge({ children, variant = 'secondary' }: { children: React.ReactNode; variant?: 'secondary' | 'outline' }) {
+  // 对齐博客页标签的视觉密度：保持字号不变，略放松左右内边距
   const base = 'inline-flex items-center rounded-md px-2 py-0.5 text-xs'
-  const style =
+  const styles =
     variant === 'secondary'
-      ? 'bg-secondary text-secondary-foreground'
-      : variant === 'outline'
-      ? 'border text-foreground'
-      : 'bg-primary text-primary-foreground'
-  return <span className={`${base} ${style}`}>{children}</span>
+      ? `${base} bg-secondary text-secondary-foreground`
+      : `${base} border text-foreground`
+  return <span className={styles}>{children}</span>
 }

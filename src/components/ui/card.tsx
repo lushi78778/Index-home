@@ -5,11 +5,13 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
 }
 
 export function CardHeader({ children }: { children: React.ReactNode }) {
-  return <div className="mb-2">{children}</div>
+  // 与 /blog 列表的间距保持一致：标题与描述之间留出 0.25rem 间距
+  return <div className="mb-2 space-y-1">{children}</div>
 }
 
 export function CardTitle({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-lg font-semibold leading-none tracking-tight">{children}</h3>
+  // 调整行高与字间距，使其更接近博客列表的排版（不改变字号）
+  return <h3 className="text-lg font-semibold leading-snug">{children}</h3>
 }
 
 export function CardDescription({ children }: { children: React.ReactNode }) {
