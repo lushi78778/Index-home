@@ -17,18 +17,18 @@ site:
   shortName: "xray.top"
   description: "一个现代化、内容驱动的个人主页，集成了博客、项目展示、笔记等功能。"
   # 站点对外访问的完整 URL（用于 Canonical/OG/Sitemap/Robots 等），务必使用 https
-  url: "https://example.com"
+  url: "https://xray.top"
 
   # 作者信息
   author:
     name: "XRAY"
-    url: "https://example.com/about"
+    url: "https://xray.top/about"
 
   # 社交链接（按需填写）
   social:
-    github: "https://github.com/yourname"
-    twitter: "https://x.com/yourname"
-    email: "me@example.com"
+    github: "https://github.com/lushi78778"
+    twitter: "https://x.com/lushi78778"
+    email: "lushi78778@xray.top"
 
   # 国际化
   locales: ["zh", "en"]
@@ -48,25 +48,24 @@ runtime:
   # 本地或容器内访问服务时的主机与端口，仅用于 Makefile 里的工具任务
   host: "localhost"
   port: 3000
-  # ISR 按需刷新接口的密钥（/api/revalidate?secret=...），生产环境请替换为强随机值
+  # ISR 按需刷新接口的密钥（/api/revalidate?secret=...），生产环境替换为强随机值
   revalidateSecret: "dev-secret"
-  # 若使用 Plausible 分析，这里填你的站点域名（如 xray.top），否则留空不注入脚本
-  plausibleDomain: ""
+  # 若使用 Plausible 分析，这里填你的站点域名，否则留空不注入脚本
+  plausibleDomain: "xray.top"
   # 统一环境变量（生成到 .env.local）
   env:
     # ——— 站点与可见配置（前端可读取，勿存敏感信息） ———
     # 站点对外 URL（默认会取 site.url），用于前端构造链接与 SEO 信息
-    NEXT_PUBLIC_SITE_URL: "https://example.com"
-    # Plausible 分析的域名，配置后才会注入脚本；不使用可留空
-    NEXT_PUBLIC_PLAUSIBLE_DOMAIN: ""
+  # 注意：为避免重复配置，以下变量由单一来源自动生成：
+  # - NEXT_PUBLIC_SITE_URL     ← 由 site.url 自动生成
+  # - NEXT_PUBLIC_PLAUSIBLE_DOMAIN ← 由 runtime.plausibleDomain 自动生成
 
     # ——— 邮件发送（Resend）与联系表单 ———
     # Resend API Key（服务端密钥），用于发送邮件（如联系表单/订阅确认）；生产必须配置
     RESEND_API_KEY: ""
     # 联系表单收件地址（支持多收件人用逗号分隔），例如：me@example.com,other@example.com
-    CONTACT_TO_EMAIL: ""
-    # revalidate 接口的密钥（与 runtime.revalidateSecret 一致即可），用于服务端 ISR 刷新
-    REVALIDATE_SECRET: "dev-secret"
+    CONTACT_TO_EMAIL: "lushi78778@xray.top"
+  # revalidate 接口的密钥由 runtime.revalidateSecret 自动生成到 .env.local
 
     # ——— Upstash Redis（限流/缓存/存储） ———
     # Upstash REST URL 与 Token，若启用限流/缓存等功能需配置，否则留空
