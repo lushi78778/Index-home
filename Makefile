@@ -1,45 +1,53 @@
-# Makefile for Index-home (Next.js + TS + Tailwind + MDX)
-# Use GNU Make. On Windows, use Git Bash/MSYS2/Cygwin or WSL.
+## Makefile（集中式配置版）
+# 读取 config.yaml 并生成 src/config/site.ts；所有站点元数据与运行时参数集中在 config.yaml。
 
-# Configurable variables (can be overridden: make dev PORT=3000)
 NPM ?= npm
-HOST ?= localhost
-PORT ?= 3000
-REVALIDATE_PATH ?= /
-REVALIDATE_SECRET ?= $(REVALIDATE_SECRET)
+NODE ?= node
 
-.PHONY: help install dev build start typecheck lint test test-watch format analyze ci clean \
+# 从 config.yaml 读取运行时参数（若 scripts/config.mjs 已将 .env.local 写好，也可直接使用 .env.local）
+HOST ?= $(shell awk '/host:/{print $$2; exit}' config.yaml)
+PORT ?= $(shell awk '/port:/{print $$2; exit}' config.yaml)
+REVALIDATE_PATH ?= /
+REVALIDATE_SECRET ?=
+
+.PHONY: help config install dev build start typecheck lint test test-watch format analyze ci clean \
 	revalidate sitemap rss search-index
 
 help:
-	@echo "Available targets:"
-	@echo "  install        - Install dependencies (npm install)"
-	@echo "  dev            - Start Next.js dev server"
-	@echo "  build          - Build production bundle"
-	@echo "  start          - Start production server"
-	@echo "  typecheck      - Run TypeScript type checking"
-	@echo "  lint           - Run ESLint"
-	@echo "  test           - Run unit tests (Vitest)"
-	@echo "  test-watch     - Run unit tests in watch mode"
-	@echo "  format         - Format code with Prettier"
-	@echo "  analyze        - Build with bundle analyzer (if configured)"
-	@echo "  ci             - Typecheck, test, then build"
-	@echo "  clean          - Remove build artifacts (.next, out, dist, .turbo)"
-	@echo "  revalidate     - Trigger on-demand ISR (vars: REVALIDATE_PATH, REVALIDATE_SECRET, HOST, PORT)"
-	@echo "  sitemap        - Fetch sitemap.xml"
-	@echo "  rss            - Fetch rss.xml"
-	@echo "  search-index   - Fetch /api/search-index"
+	@echo "可用目标:"
+	@echo "  config         - 读取 config.yaml，生成 src/config/site.ts，并更新 .env.local（如需）"
+	@echo "  install        - 安装依赖 (npm install)"
+	@echo "  dev            - 启动开发服务 (next dev)"
+	@echo "  build          - 生产构建 (next build)"
+	@echo "  start          - 启动生产服务 (next start)"
+	@echo "  typecheck      - TypeScript 类型检查"
+	@echo "  lint           - ESLint"
+	@echo "  test           - 单元测试 (Vitest)"
+	@echo "  test-watch     - 单元测试监听"
+	@echo "  format         - Prettier 格式化"
+	@echo "  analyze        - 打包分析构建"
+	@echo "  ci             - 类型检查 + 测试 + 构建"
+	@echo "  clean          - 清理构建产物 (.next, out, dist, .turbo)"
+	@echo "  revalidate     - 触发按需 ISR (变量: REVALIDATE_PATH, REVALIDATE_SECRET, HOST, PORT)"
+	@echo "  sitemap        - 拉取 sitemap.xml"
+	@echo "  rss            - 拉取 rss.xml"
+	@echo "  search-index   - 拉取 /api/search-index"
+
+# 生成 TS 配置（每次 dev/build/start 前自动执行，保证与 YAML 同步）
+config:
+	@echo "→ 生成站点配置 src/config/site.ts（来源 config.yaml）"
+	@$(NODE) scripts/config.mjs
 
 install:
 	$(NPM) install
 
-dev:
+dev: config
 	$(NPM) run dev
 
-build:
+build: config
 	$(NPM) run build
 
-start:
+start: config
 	$(NPM) run start
 
 typecheck:
@@ -51,7 +59,7 @@ lint:
 format:
 	$(NPM) run format
 
-analyze:
+analyze: config
 	$(NPM) run analyze
 
 test:

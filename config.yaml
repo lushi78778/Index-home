@@ -1,0 +1,39 @@
+# 站点与运行时配置（集中式）
+
+site:
+  # 基础信息
+  name: "xray.top 透视实验室"
+  shortName: "xray.top"
+  description: "一个现代化、内容驱动的个人主页，集成了博客、项目展示、笔记等功能。"
+  url: "https://example.com"
+
+  # 作者信息
+  author:
+    name: "XRAY"
+    url: "https://example.com/about"
+
+  # 社交链接（按需填写）
+  social:
+    github: "https://github.com/yourname"
+    twitter: "https://x.com/yourname"
+    email: "me@example.com"
+
+  # 国际化
+  locales: ["zh", "en"]
+  defaultLocale: "zh"
+
+  # 备案信息（可选）
+  record:
+    icp:
+      number: "粤ICP备12345678号-1"
+      url: "https://beian.miit.gov.cn"
+    police:
+      number: "粤公网安备 44030502000000号"
+      url: "https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=44030502000000"
+
+# 运行时配置（Makefile 与脚本会读取这些值）
+runtime:
+  host: "localhost"
+  port: 3000
+  revalidateSecret: "dev-secret"
+  plausibleDomain: ""  # 若使用 Plausible，填入你的域名（用于注入脚本）
