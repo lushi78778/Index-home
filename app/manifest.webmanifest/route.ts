@@ -8,7 +8,9 @@ export function GET() {
     display: 'standalone',
     background_color: '#ffffff',
     theme_color: '#000000',
-    icons: [],
+    icons: [
+      { src: '/icon.svg', sizes: '64x64', type: 'image/svg+xml', purpose: 'any' },
+    ],
   }
   return new Response(JSON.stringify(json), {
     headers: { 'Content-Type': 'application/manifest+json' },

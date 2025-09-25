@@ -4,15 +4,23 @@ import { NextResponse } from 'next/server'
 // 全站安全与隐私响应头（可按需调整 CSP 与策略）
 export function middleware(req: NextRequest) {
   const res = NextResponse.next()
+  // 为每个请求生成一次性 nonce（Edge-safe）
+  const arr = new Uint8Array(16)
+  // globalThis.crypto 为 Edge/Web 可用 API
+  globalThis.crypto.getRandomValues(arr)
+  let s = ''
+  for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i])
+  const nonce = btoa(s)
+  res.headers.set('x-nonce', nonce)
   // Content Security Policy（简单示例，注意与实际第三方资源对齐）
   const plausibleHost = 'plausible.io'
   const csp = [
     "default-src 'self'",
     "img-src 'self' data: https:",
-    // TODO: 去除 'unsafe-inline'，改为 nonce/hash；此处暂保留以避免样式闪烁
+    // 样式仍暂时允许 inline，后续可替换为严格白名单/nonce/hash
     "style-src 'self' 'unsafe-inline'",
-    // 放行可选的 Plausible 分析脚本来源
-    `script-src 'self' 'unsafe-inline' https://${plausibleHost}`,
+    // 脚本：移除 unsafe-inline，使用 nonce 收紧内联脚本，保留 Plausible 域
+    `script-src 'self' 'nonce-${nonce}' https://${plausibleHost}`,
     "font-src 'self' data: https:",
     `connect-src 'self' https://${plausibleHost}`,
     "frame-ancestors 'none'",

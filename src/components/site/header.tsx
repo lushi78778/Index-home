@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { ThemeToggle } from './theme-toggle'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useCommand } from './command-provider'
+import { Tooltip } from '@/components/ui/tooltip'
 
 // 站点头部导航
 export function Header() {
@@ -17,6 +19,7 @@ export function Header() {
   ]
   const router = useRouter()
   const [q, setQ] = useState('')
+  const { open } = useCommand()
   function goSearch() {
     const s = q.trim()
     if (!s) return router.push('/search')
@@ -36,6 +39,10 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
+          {/* 命令面板入口 */}
+          <Tooltip label="全局搜索 (Ctrl/⌘+K)">
+            <button onClick={open} className="h-8 rounded-md border px-2 text-sm hover:bg-accent">命令</button>
+          </Tooltip>
           {/* 顶部全局搜索框 */}
           <div className="flex items-center gap-2">
             <input

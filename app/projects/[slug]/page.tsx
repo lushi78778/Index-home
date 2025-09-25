@@ -8,6 +8,7 @@ import rehypeSlug from 'rehype-slug'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import remarkGfm from 'remark-gfm'
 import { mdxComponents } from '@/components/mdx/mdx-components'
+import { JsonLd } from '@/components/site/json-ld'
 
 export const revalidate = 60 * 60 * 24
 
@@ -71,41 +72,27 @@ export default function ProjectPage({ params }: { params: { slug: string } }) {
       )}
 
       {/* 结构化数据：CreativeWork + BreadcrumbList */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            {
-              '@context': 'https://schema.org',
-              '@type': 'CreativeWork',
-              name: project.title,
-              description: project.description,
-              inLanguage: 'zh-CN',
-              url: `${siteConfig.url}/projects/${project.slug}`,
-              author: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
-              keywords: project.tags?.length ? project.tags.join(', ') : undefined,
-            },
-            null,
-            0,
-          ),
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          name: project.title,
+          description: project.description,
+          inLanguage: 'zh-CN',
+          url: `${siteConfig.url}/projects/${project.slug}`,
+          author: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
+          keywords: project.tags?.length ? project.tags.join(', ') : undefined,
         }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            {
-              '@context': 'https://schema.org',
-              '@type': 'BreadcrumbList',
-              itemListElement: [
-                { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
-                { '@type': 'ListItem', position: 2, name: '项目', item: `${siteConfig.url}/projects` },
-                { '@type': 'ListItem', position: 3, name: project.title, item: `${siteConfig.url}/projects/${project.slug}` },
-              ],
-            },
-            null,
-            0,
-          ),
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
+            { '@type': 'ListItem', position: 2, name: '项目', item: `${siteConfig.url}/projects` },
+            { '@type': 'ListItem', position: 3, name: project.title, item: `${siteConfig.url}/projects/${project.slug}` },
+          ],
         }}
       />
     </article>

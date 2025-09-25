@@ -1,0 +1,16 @@
+---
+title: Edge 与 ISR 的实践要点
+date: 2025-09-05
+excerpt: 何时选择 Edge？如何正确使用 ISR 与按需再验证？
+tags: ["nextjs", "performance", "edge"]
+lang: zh
+---
+
+本文总结了在 Next.js 中使用 Edge 与 ISR 的经验：
+
+1. 以静态化与缓存优先，减少动态渲染
+2. 对需要 freshness 的页面启用 ISR，并预留 revalidate 接口
+3. 借助 Middleware 设置安全头与隐私策略
+4. 在边缘节点部署，降低 TTFB
+
+在合适的约束与观测下，Edge + ISR 能带来良好性能与稳定性。

@@ -7,6 +7,7 @@ import { siteConfig } from '@/config/site'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import { ToastProvider } from '@/components/ui/toast'
+import { CommandProvider } from '@/components/site/command-provider'
 
 // 使用 next/font 自托管字体，减少 CLS 并提升渲染稳定性
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
@@ -57,6 +58,7 @@ export default function RootLayout({
         {/* 主题切换与全局 Toast 提供者 */}
         <ThemeProvider>
           <ToastProvider>
+          <CommandProvider>
           {/* 无障碍：跳到主要内容 */}
           <a
             href="#main"
@@ -69,6 +71,7 @@ export default function RootLayout({
           <main id="main" className="container mx-auto px-4 py-8">{children}</main>
           {/* 页脚（版权/社交/订阅） */}
           <Footer />
+          </CommandProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>

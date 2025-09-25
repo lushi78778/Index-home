@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-// 注意：不要静态导入第三方 SDK 以免在未安装依赖时阻塞开发环境
-// 使用动态导入，仅在配置了密钥时才加载
-
-// 简单内存级速率限制（示例）：同一 IP 每 5 分钟最多 3 次
-const RATE_LIMIT_WINDOW = 5 * 60 * 1000
-const RATE_LIMIT_MAX = 3
-const rateMap = new Map<string, number[]>()
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
 // Server 端表单校验（与客户端一致）
 const Schema = z.object({
@@ -27,16 +22,18 @@ export async function POST(req: Request) {
     // 蜜罐命中
     return NextResponse.json({ ok: true })
   }
-  // 速率限制
+  // 速率限制（Upstash）：同一 IP 每 5 分钟最多 3 次
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
-  const now = Date.now()
-  const arr = rateMap.get(ip) || []
-  const recent = arr.filter((t) => now - t < RATE_LIMIT_WINDOW)
-  if (recent.length >= RATE_LIMIT_MAX) {
-    return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 })
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
+  if (redisUrl && redisToken) {
+    const redis = new Redis({ url: redisUrl, token: redisToken })
+    const ratelimit = new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, '5 m') })
+    const { success, reset } = await ratelimit.limit(`contact:${ip}`)
+    if (!success) {
+      return NextResponse.json({ ok: false, error: 'rate_limited', reset }, { status: 429 })
+    }
   }
-  recent.push(now)
-  rateMap.set(ip, recent)
 
   // 发送邮件（可选，需配置 RESEND_API_KEY 和接收邮箱）
   const apiKey = process.env.RESEND_API_KEY

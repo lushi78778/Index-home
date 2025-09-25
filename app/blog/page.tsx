@@ -3,11 +3,20 @@ import type { Metadata } from 'next'
 import { getAllPosts } from '@/lib/content'
 import { siteConfig } from '@/config/site'
 import { Pagination } from '@/components/ui/pagination'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: '博客',
-  description: '文章列表：分页、标签筛选、搜索入口。',
-  alternates: { canonical: `${siteConfig.url}/blog` },
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: { page?: string; pageSize?: string; tag?: string; q?: string }
+}): Promise<Metadata> {
+  const hasFilter = !!(searchParams?.tag?.trim() || searchParams?.q?.trim())
+  return {
+    title: '博客',
+    description: '文章列表：分页、标签筛选、搜索入口。',
+    alternates: { canonical: `${siteConfig.url}/blog` },
+    robots: hasFilter ? { index: false, follow: true } : undefined,
+  }
 }
 
 // 文章列表页
@@ -23,6 +32,16 @@ export default function BlogIndex({
   const pageSize = Math.min(50, Math.max(1, Number(searchParams.pageSize || '10')))
   const tag = searchParams.tag?.trim()
   const q = searchParams.q?.trim().toLowerCase()
+
+  // 统一分页路径：将 /blog?page=n 重定向到 /blog/page/n，并保留筛选查询串
+  if (searchParams.page && page > 1) {
+    const base = `/blog/page/${page}`
+    const qs = new URLSearchParams()
+    if (tag) qs.set('tag', tag)
+    if (q) qs.set('q', q)
+    const target = qs.size ? `${base}?${qs.toString()}` : base
+    redirect(target)
+  }
 
   // 获取文章集合，构建期读取，生产环境可配合 ISR
   let posts = getAllPosts()
@@ -45,7 +64,7 @@ export default function BlogIndex({
       {/* 可选：当存在 q 等非规范筛选时，可考虑添加 robots noindex
       {q && <meta name="robots" content="noindex,follow" />} */}
 
-      {/* 筛选提示 */}
+      {/* 过滤提示 */}
       <div className="text-sm text-muted-foreground">
         {tag ? (
           <span>
@@ -89,7 +108,11 @@ export default function BlogIndex({
         current={current}
         total={totalPages}
         basePath="/blog"
-        buildHref={(n) => `/blog?page=${n}${tag ? `&tag=${encodeURIComponent(tag)}` : ''}`}
+        buildHref={(n) => {
+          const base = `/blog/page/${n}`
+          if (tag) return `${base}?tag=${encodeURIComponent(tag)}`
+          return base
+        }}
       />
     </div>
   )

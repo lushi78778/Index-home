@@ -2,7 +2,7 @@ import { ImageResponse } from '@vercel/og'
 import { getPostBySlug } from '@/lib/content'
 import { siteConfig } from '@/config/site'
 
-export const runtime = 'nodejs'
+export const runtime = 'edge'
 
 // 为每篇文章动态生成 OG 图片（标题 + 站点名 + 日期）
 export async function GET(_: Request, { params }: { params: { slug: string } }) {

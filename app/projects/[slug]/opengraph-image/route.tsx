@@ -2,7 +2,7 @@ import { ImageResponse } from '@vercel/og'
 import { getAllProjects } from '@/lib/content'
 import { siteConfig } from '@/config/site'
 
-export const runtime = 'nodejs'
+export const runtime = 'edge'
 
 export async function GET(_: Request, { params }: { params: { slug: string } }) {
   const project = getAllProjects().find((p) => p.slug === params.slug)

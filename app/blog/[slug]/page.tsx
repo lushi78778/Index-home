@@ -12,6 +12,8 @@ import { ReadingProgress } from '@/components/site/reading-progress'
 import { siteConfig } from '@/config/site'
 import GithubSlugger from 'github-slugger'
 import { BackToTop } from '@/components/site/back-to-top'
+import { JsonLd } from '@/components/site/json-ld'
+import { GiscusComments } from '@/components/site/giscus'
 
 // 可选：按天增量再验证（ISR）
 export const revalidate = 60 * 60 * 24 // 24 小时
@@ -159,63 +161,44 @@ export default function PostPage({ params }: { params: { slug: string } }) {
         </div>
       </div>
 
+  {/* 可选：Giscus 评论 */}
+  <GiscusComments />
+
       {/* 结构化数据：BlogPosting + BreadcrumbList + Person */}
-      <script
-        type="application/ld+json"
-        // 使用 JSON.stringify 避免 XSS（Next 会进行适当转义）
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            {
-              '@context': 'https://schema.org',
-              '@type': 'BlogPosting',
-              headline: post.title,
-              description: post.excerpt || undefined,
-              datePublished: post.date,
-              dateModified: post.updated || post.date,
-              inLanguage: post.lang,
-              mainEntityOfPage: pageUrl,
-              author: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
-              publisher: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
-              image: post.ogImage || post.cover ? [post.ogImage || (post.cover as string)] : undefined,
-              keywords: post.tags && post.tags.length ? post.tags.join(', ') : undefined,
-              isPartOf: { '@type': 'Blog', name: siteConfig.name, url: siteConfig.url },
-            },
-            null,
-            0,
-          ),
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: post.title,
+          description: post.excerpt || undefined,
+          datePublished: post.date,
+          dateModified: post.updated || post.date,
+          inLanguage: post.lang,
+          mainEntityOfPage: pageUrl,
+          author: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
+          publisher: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
+          image: post.ogImage || post.cover ? [post.ogImage || (post.cover as string)] : undefined,
+          keywords: post.tags && post.tags.length ? post.tags.join(', ') : undefined,
+          isPartOf: { '@type': 'Blog', name: siteConfig.name, url: siteConfig.url },
         }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            {
-              '@context': 'https://schema.org',
-              '@type': 'BreadcrumbList',
-              itemListElement: [
-                { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
-                { '@type': 'ListItem', position: 2, name: '博客', item: `${siteConfig.url}/blog` },
-                { '@type': 'ListItem', position: 3, name: post.title, item: pageUrl },
-              ],
-            },
-            null,
-            0,
-          ),
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
+            { '@type': 'ListItem', position: 2, name: '博客', item: `${siteConfig.url}/blog` },
+            { '@type': 'ListItem', position: 3, name: post.title, item: pageUrl },
+          ],
         }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            {
-              '@context': 'https://schema.org',
-              '@type': 'Person',
-              name: siteConfig.author.name,
-              url: siteConfig.author.url,
-            },
-            null,
-            0,
-          ),
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Person',
+          name: siteConfig.author.name,
+          url: siteConfig.author.url,
         }}
       />
     </article>
