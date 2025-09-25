@@ -17,27 +17,33 @@ export function Header() {
     const v = document.cookie.match(/(?:^|; )NEXT_LOCALE=([^;]+)/)?.[1]
     setLocale(v || 'zh')
   }, [])
-  const prefix = `/${locale}`
+  // 采用“无前缀 URL”，由中间件和 RootLayout 决定当前语言；
+  // 如果用户访问了 /zh 或 /en，会被 308 重定向到无前缀。
   const nav = [
-    { href: `${prefix}/`, label: t('nav.home') },
-    { href: `${prefix}/blog`, label: t('nav.blog') },
-    { href: `${prefix}/projects`, label: t('nav.projects') },
-    { href: `${prefix}/about`, label: t('nav.about') },
-    { href: `${prefix}/now`, label: t('nav.now') },
-    { href: `${prefix}/uses`, label: t('nav.uses') },
+    { href: `/`, label: t('nav.home') },
+    { href: `/blog`, label: t('nav.blog') },
+    { href: `/projects`, label: t('nav.projects') },
+    { href: `/about`, label: t('nav.about') },
+    { href: `/now`, label: t('nav.now') },
+    { href: `/uses`, label: t('nav.uses') },
   ]
   const router = useRouter()
   const [q, setQ] = useState('')
   const { open } = useCommand()
   function goSearch() {
     const s = q.trim()
-  if (!s) return (router.push as any)(`${prefix}/search`)
-  ;(router.push as any)(`${prefix}/search?q=${encodeURIComponent(s)}`)
+    if (!s) return (router.push as any)(`/search`)
+    ;(router.push as any)(`/search?q=${encodeURIComponent(s)}`)
+  }
+  function toggleLocale() {
+    const next = locale === 'zh' ? 'en' : 'zh'
+    document.cookie = `NEXT_LOCALE=${next}; Path=/; Max-Age=31536000; SameSite=Lax`
+    location.reload()
   }
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur">
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
-        <Link href={`${prefix}/` as any} className="font-semibold">
+        <Link href={`/` as any} className="font-semibold">
           xray.top
         </Link>
         <nav className="hidden gap-4 md:flex">
@@ -63,6 +69,10 @@ export function Header() {
             />
             <button onClick={goSearch} className="h-8 rounded-md border px-2 text-sm hover:bg-accent">{t('nav.search')}</button>
           </div>
+          {/* 语言开关（zh/en） */}
+          <button onClick={toggleLocale} className="h-8 rounded-md border px-2 text-sm hover:bg-accent">
+            {locale === 'zh' ? '中文' : 'EN'}
+          </button>
           <ThemeToggle />
         </div>
       </div>
