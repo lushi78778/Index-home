@@ -37,3 +37,19 @@ runtime:
   port: 3000
   revalidateSecret: "dev-secret"
   plausibleDomain: ""  # 若使用 Plausible，填入你的域名（用于注入脚本）
+  # 统一环境变量（生成到 .env.local）
+  env:
+    NEXT_PUBLIC_SITE_URL: "https://example.com" # 若不填，默认使用 site.url
+    NEXT_PUBLIC_PLAUSIBLE_DOMAIN: ""
+    RESEND_API_KEY: ""
+    CONTACT_TO_EMAIL: ""
+    REVALIDATE_SECRET: "dev-secret"
+    UPSTASH_REDIS_REST_URL: ""
+    UPSTASH_REDIS_REST_TOKEN: ""
+    NEXT_PUBLIC_GISCUS_REPO: ""
+    NEXT_PUBLIC_GISCUS_REPO_ID: ""
+    NEXT_PUBLIC_GISCUS_CATEGORY: ""
+    NEXT_PUBLIC_GISCUS_CATEGORY_ID: ""
+    BUTTONDOWN_API_TOKEN: ""
+    BUTTONDOWN_DOUBLE_OPT_IN: true
+    NEWSLETTER_FROM: ""
