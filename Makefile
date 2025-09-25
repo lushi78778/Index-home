@@ -8,7 +8,7 @@ NODE ?= node
 HOST ?= $(shell awk '/host:/{print $$2; exit}' config.yaml)
 PORT ?= $(shell awk '/port:/{print $$2; exit}' config.yaml)
 REVALIDATE_PATH ?= /
-REVALIDATE_SECRET ?=
+REVALIDATE_SECRET ?= $(shell awk '/revalidateSecret:/{print $$2; exit}' config.yaml)
 
 .PHONY: help config install dev build start typecheck lint test test-watch format analyze ci clean \
 	revalidate sitemap rss search-index
