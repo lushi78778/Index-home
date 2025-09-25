@@ -24,6 +24,7 @@ import { headers } from 'next/headers'
 import { ToastProvider } from '@/components/ui/toast'
 import { CommandProvider } from '@/components/site/command-provider'
 import { NextIntlClientProvider } from 'next-intl'
+import { setRequestLocale } from 'next-intl/server'
 
 // 使用 next/font 优化字体加载。
 // 这会将 Inter 字体在构建时下载到服务器，并在加载时自托管，
@@ -83,9 +84,12 @@ export default async function RootLayout({
   const loadMessages = messageLoaders[locale as keyof typeof messageLoaders] || messageLoaders.zh
   const messages = (await loadMessages()).default
 
+  // 告诉 next-intl 当前请求使用的 locale（不会渲染任何内容）
+  setRequestLocale(locale)
+
   return (
     // suppressHydrationWarning: 告诉 React 忽略 `<html>` 标签上因扩展程序等原因造成的属性不匹配警告
-    <html lang={locale} suppressHydrationWarning className={inter.className}>
+  <html lang={locale} suppressHydrationWarning className={inter.className}>
       <body>
         {/* 注入 Plausible 分析脚本。仅当环境变量中配置了 domain 时生效。 */}
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (

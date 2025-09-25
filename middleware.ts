@@ -12,24 +12,54 @@
  *     -   设置其他安全相关的 HTTP 头，如 `Referrer-Policy`, `X-Content-Type-Options` 等，以增强应用的安全性。
  */
 
-import type { NextRequest } from 'next/server'
-import createIntlMiddleware from 'next-intl/middleware'
+import { NextResponse, type NextRequest } from 'next/server'
 import { siteConfig } from './src/config/site'
 
-// 创建一个 next-intl 中间件实例
-// 这个中间件会自动处理所有与国际化路由相关的逻辑
-const intlMiddleware = createIntlMiddleware({
-  locales: siteConfig.locales,
-  defaultLocale: siteConfig.defaultLocale,
-  // `localePrefix: 'as-needed'` 表示只有在访问非默认语言时，URL 才需要带上语言前缀
-  // 例如，如果默认语言是 'zh'，访问 `/about` 和 `/zh/about` 效果相同，而访问英文版则是 `/en/about`
-  localePrefix: 'as-needed',
-});
+// 简易的 Locale 协商：优先 Cookie，其次 Accept-Language，最后默认语言。
+function detectLocale(req: NextRequest): string {
+  const cookieLocale = req.cookies.get('NEXT_LOCALE')?.value
+  if (cookieLocale && siteConfig.locales.includes(cookieLocale as any)) {
+    return cookieLocale
+  }
+
+  const header = req.headers.get('accept-language') || ''
+  const accepted = header
+    .split(',')
+    .map((part) => part.trim().split(';')[0])
+    .filter(Boolean)
+
+  for (const l of accepted) {
+    const base = l.toLowerCase().split('-')[0]
+    if (siteConfig.locales.includes(base as any)) return base
+  }
+  return siteConfig.defaultLocale
+}
 
 export function middleware(req: NextRequest) {
-  // 1. 首先，调用 intlMiddleware 来处理国际化路由。
-  // 它会返回一个响应对象，可能是一个重定向响应，也可能是一个带有特定头的“下一步”响应。
-  const res = intlMiddleware(req);
+  const { pathname } = req.nextUrl
+
+  // 1) 若 URL 以 /zh 或 /en 等前缀访问，则做 308 重定向到“无前缀”版本，并设置 Cookie
+  const match = pathname.match(/^\/(\w{2})(\/.*)?$/)
+  if (match) {
+    const maybeLocale = match[1]
+    if (siteConfig.locales.includes(maybeLocale as any)) {
+      const rest = match[2] || '/'
+      const url = new URL(rest, req.url)
+      const redirect = NextResponse.redirect(url, 308)
+      redirect.cookies.set('NEXT_LOCALE', maybeLocale, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' })
+      // 同时向下游传递 locale 信息（尽管这次请求会被重定向）
+      redirect.headers.set('x-locale', maybeLocale)
+      return redirect
+    }
+  }
+
+  // 2) 无前缀路径：仅做语言检测与上下文传递，不改写 URL
+  const locale = detectLocale(req)
+  const res = NextResponse.next()
+  // 传递给下游（app/layout.tsx）使用
+  res.headers.set('x-locale', locale)
+  // 持久化到 Cookie，便于后续请求
+  res.cookies.set('NEXT_LOCALE', locale, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' })
 
   // 2. 接下来，为响应添加安全头。
   // 使用 Web Crypto API 生成一个安全的、一次性的 nonce 值。

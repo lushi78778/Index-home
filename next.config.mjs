@@ -17,10 +17,9 @@ const withMDX = createMDX({
   extension: /\.mdx?$/,
 })
 
-// 初始化 next-intl 插件
-// 它会根据指定的配置文件，自动处理国际化路由和本地化内容的加载
-// 参考: https://next-intl.dev/docs/getting-started/app-router
-const withNextIntl = createNextIntlPlugin('./src/i18n/config.ts')
+// 注意：此项目使用自定义中间件与 RootLayout 手动提供 next-intl 上下文。
+// 为避免在无路径前缀时强制依赖 next-intl 的 middleware 注入导致的 404，
+// 这里暂不启用 next-intl 的 Next.js 插件。如果未来需要 i18n 路由，建议再启用。
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -122,4 +121,5 @@ const applyPlugins = (cfg) => {
 // 导出最终配置
 // 插件的应用顺序是：基础配置 -> MDX -> PWA -> 国际化
 // 这种链式调用确保了每个插件都能正确地修改和扩展配置
-export default withNextIntl(applyPlugins(nextConfig))
+// 启用 next-intl 插件（指向 src/i18n/config.ts），以便在 RSC 环境加载消息与 locale。
+export default createNextIntlPlugin('./src/i18n/config.ts')(applyPlugins(nextConfig))

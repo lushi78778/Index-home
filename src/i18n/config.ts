@@ -6,7 +6,6 @@
  */
 
 import { getRequestConfig } from 'next-intl/server'
-import { notFound } from 'next/navigation'
 import { siteConfig } from '@/config/site'
 
 // 从站点配置中导入支持的语言列表和默认语言
@@ -15,15 +14,46 @@ export type Locale = (typeof locales)[number]
 export const defaultLocale: Locale = siteConfig.defaultLocale
 
 export default getRequestConfig(async ({ locale }) => {
-  // 校验请求的 locale 是否在支持的语言列表中
-  // 如果不支持，则调用 notFound()，这将导致 Next.js 渲染 404 页面
-  if (!locales.includes(locale as any)) {
-    notFound()
+  // 在不使用路径前缀的情况下（无 /en、/zh 段），`locale` 可能为空。
+  // 我们采用“Cookie -> 自定义请求头 -> Accept-Language -> 默认值”的顺序来解析。
+  function resolveLocale(): string {
+    // 1) 来自中间件设置的 Cookie
+    try {
+      // 动态导入，避免在 Edge/Node 环境下的静态分析问题
+      const { cookies, headers } = require('next/headers') as typeof import('next/headers')
+      const c = cookies().get('NEXT_LOCALE')?.value
+      if (c && locales.includes(c as any)) return c
+
+      // 2) 自定义响应头（开发/某些平台下也能透传到请求头）
+      const h = headers()
+      const hl = h.get('x-locale') || ''
+      if (hl && locales.includes(hl as any)) return hl
+
+      // 3) Accept-Language 协商
+      const al = h.get('accept-language') || ''
+      const accepted = al
+        .split(',')
+        .map((p) => p.trim().split(';')[0])
+        .filter(Boolean)
+      for (const l of accepted) {
+        const base = l.toLowerCase().split('-')[0]
+        if (locales.includes(base as any)) return base
+      }
+    } catch (_) {
+      // 在某些环境拿不到 next/headers 时，忽略错误并走下面的回退
+    }
+
+    // 4) 若 next-intl 仍传入了 locale，且合法，则使用
+    if (locale && locales.includes(locale as any)) return locale
+
+    // 5) 最后回退到默认语言
+    return defaultLocale
   }
 
-  // 根据有效的 locale，动态导入对应的翻译文件
-  // 例如，如果 locale 是 'en'，它将加载 `messages/en.json`
+  const resolved = resolveLocale()
+
   return {
-    messages: (await import(`./messages/${locale}.json`)).default,
+    locale: resolved,
+    messages: (await import(`./messages/${resolved}.json`)).default,
   }
 })
