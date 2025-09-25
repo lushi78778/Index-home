@@ -20,15 +20,25 @@ export function GET() {
   const now = new Date()
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((u) => `<url><loc>${u}</loc><lastmod>${now.toISOString()}</lastmod></url>`).join('\n')}
+${urls
+  .map(
+    (u) => `<url><loc>${u}</loc><lastmod>${now.toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+  )
+  .join('\n')}
 ${getAllPosts()
-  .map((p) => `<url><loc>${siteConfig.url}/blog/${p.slug}</loc><lastmod>${new Date(p.updated || p.date).toISOString()}</lastmod></url>`)
+  .map(
+    (p) => `<url><loc>${siteConfig.url}/blog/${p.slug}</loc><lastmod>${new Date(p.updated || p.date).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
+  )
   .join('\n')}
 ${getAllProjects()
-  .map((p) => `<url><loc>${siteConfig.url}/projects/${p.slug}</loc><lastmod>${new Date(p.date).toISOString()}</lastmod></url>`)
+  .map(
+    (p) => `<url><loc>${siteConfig.url}/projects/${p.slug}</loc><lastmod>${new Date(p.date).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`,
+  )
   .join('\n')}
 ${getAllTags()
-  .map((t) => `<url><loc>${siteConfig.url}/tags/${encodeURIComponent(t.tag)}</loc><lastmod>${now.toISOString()}</lastmod></url>`)
+  .map(
+    (t) => `<url><loc>${siteConfig.url}/tags/${encodeURIComponent(t.tag)}</loc><lastmod>${now.toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.5</priority></url>`,
+  )
   .join('\n')}
 </urlset>`
   return new Response(xml, { headers: { 'Content-Type': 'application/xml' } })

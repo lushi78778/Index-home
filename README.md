@@ -10,6 +10,7 @@
 - 客户端搜索：静态索引 + MiniSearch
 - 动态 OG：@vercel/og（Satori）
 - 安全与质量：CSP/HSTS/隐私友好分析（Plausible 可选）+ Vitest + GitHub Actions
+- PWA：next-pwa（生产环境启用，离线缓存与 SW 自动注册）
 
 ## 主要能力
 - 路由与页面
@@ -46,6 +47,8 @@ npm run dev
 ```bash
 npm run typecheck
 npm test
+npm run e2e       # 端到端测试（会自动启动 dev 服务器）
+npm run e2e:ui    # 可视化查看用例
 ```
 
 生产构建：
@@ -53,6 +56,10 @@ npm test
 npm run build
 npm run start
 ```
+
+提示：
+- 生产构建会启用 PWA（service worker）并缓存关键资源；本地开发默认禁用。
+- 中间件会为每次请求注入 CSP Nonce，并传递到分析脚本避免 'unsafe-inline'，生产可适度收紧 CSP。
 
 ## 环境变量
 复制 `.env.example` 到 `.env.local` 并按需填写：
@@ -65,9 +72,9 @@ npm run start
 - `middleware.ts` 的 CSP 当前包含 `'unsafe-inline'`（为兼容保留），建议生产切换到 nonce/hash 并收紧来源白名单；HSTS 仅在正式域名生效。
 
 ## 与 action.txt 对照
-- Done：核心路由与内容模型；搜索索引 + 客户端搜索；动态 OG；文章阅读体验（TOC/阅读进度/返回顶部）；安全头基础；CI；全局主题与导航；全局/页面 SEO；设计系统基础组件；next/font。
+- Done：核心路由与内容模型；搜索索引 + 客户端搜索；动态 OG；文章阅读体验（TOC/阅读进度/返回顶部）；安全头基础 + CSP Nonce；CI；全局主题与导航；全局/页面 SEO；设计系统基础组件；next/font；PWA（生产）。
 - Partial：分页 rel/robots 策略细化；表单限流迁移 Upstash；newsletter 对接第三方；图片统一用 next/image 并补占位；Vercel Analytics（可选）。
-- Next：i18n、PWA、评论（Giscus）、更多组件（dropdown-menu/tooltip/tabs）、E2E + a11y 测试。
+- Next：i18n、评论（Giscus 已接入可开关）、更多组件（dropdown-menu/tooltip/tabs）、E2E + a11y 测试；PWA 预缓存清单与 runtime 缓存策略细化；图片 LQIP/占位与尺寸策略。
 
 ## CI
 GitHub Actions：安装依赖 → `typecheck` → `test` → `build`（见 `.github/workflows/ci.yml`）。

@@ -12,6 +12,8 @@
     "analyze": "cross-env ANALYZE=true next build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
     "clean": "rimraf .next out dist .turbo"
   },
   "engines": {
@@ -21,6 +23,8 @@
     "@hookform/resolvers": "^3.9.0",
     "@mdx-js/loader": "^3.0.1",
     "@mdx-js/react": "^3.0.1",
+    "@upstash/ratelimit": "^1.0.0",
+    "@upstash/redis": "^1.31.6",
     "@vercel/og": "0.6.4",
     "clsx": "2.1.1",
     "github-slugger": "2.0.0",
@@ -33,12 +37,12 @@
     "react-hook-form": "^7.53.0",
     "rehype-pretty-code": "^0.12.6",
     "resend": "3.2.0",
-    "zod": "3.23.8",
-    "@upstash/ratelimit": "^1.0.0",
-    "@upstash/redis": "^1.31.6"
+    "zod": "3.23.8"
   },
   "devDependencies": {
     "@next/mdx": "14.2.5",
+    "@playwright/test": "^1.47.2",
+    "next-pwa": "^5.6.0",
     "@tailwindcss/typography": "0.5.14",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "6.6.3",

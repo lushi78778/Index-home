@@ -14,20 +14,43 @@ export function middleware(req: NextRequest) {
   res.headers.set('x-nonce', nonce)
   // Content Security Policy（简单示例，注意与实际第三方资源对齐）
   const plausibleHost = 'plausible.io'
-  const csp = [
-    "default-src 'self'",
-    "img-src 'self' data: https:",
-    // 样式仍暂时允许 inline，后续可替换为严格白名单/nonce/hash
-    "style-src 'self' 'unsafe-inline'",
-    // 脚本：移除 unsafe-inline，使用 nonce 收紧内联脚本，保留 Plausible 域
-    `script-src 'self' 'nonce-${nonce}' https://${plausibleHost}`,
-    "font-src 'self' data: https:",
-    `connect-src 'self' https://${plausibleHost}`,
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "worker-src 'self' blob:",
-  ].join('; ')
+  const giscusHost = 'giscus.app'
+  const isProd = (globalThis as any).process?.env?.NODE_ENV === 'production'
+
+  const directives: string[] = []
+  directives.push("default-src 'self'")
+  directives.push("img-src 'self' data: https:")
+  // 样式：生产环境去掉全局 'unsafe-inline'，仅允许元素引入；属性级允许 inline，兼顾如 style 属性（CSP3 支持）
+  if (isProd) {
+    directives.push("style-src 'self'")
+    directives.push("style-src-elem 'self'")
+    directives.push("style-src-attr 'unsafe-inline'")
+  } else {
+    directives.push("style-src 'self' 'unsafe-inline'")
+  }
+  // 脚本：使用 nonce 收紧内联脚本；允许第三方域；开发环境放宽 eval 以兼容 React Refresh
+  const scriptSrc = [
+    "script-src",
+    "'self'",
+    `'nonce-${nonce}'`,
+    `https://${plausibleHost}`,
+    `https://${giscusHost}`,
+  ]
+  if (!isProd) scriptSrc.push("'unsafe-eval'")
+  directives.push(scriptSrc.join(' '))
+
+  directives.push("font-src 'self' data: https:")
+  directives.push(`connect-src 'self' https://${plausibleHost}`)
+  // 允许嵌入来自 giscus 的评论 iframe
+  directives.push(`frame-src 'self' https://${giscusHost}`)
+  directives.push("frame-ancestors 'none'")
+  directives.push("base-uri 'self'")
+  directives.push("form-action 'self'")
+  directives.push("worker-src 'self' blob:")
+  directives.push("object-src 'none'")
+  if (isProd) directives.push('upgrade-insecure-requests')
+
+  const csp = directives.join('; ')
 
   res.headers.set('Content-Security-Policy', csp)
   res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')

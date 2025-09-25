@@ -24,8 +24,8 @@ export default function SubscribePage() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-sm space-y-3">
       <div>
-        <label className="block text-sm font-medium">邮箱</label>
-        <input className="mt-1 w-full rounded-md border px-3 py-2" {...register('email')} />
+        <label htmlFor="email" className="block text-sm font-medium">邮箱</label>
+  <input id="email" className="mt-1 w-full rounded-md border px-3 py-2" {...register('email')} />
         {formState.errors.email && (
           <p className="text-sm text-destructive">{formState.errors.email.message}</p>
         )}

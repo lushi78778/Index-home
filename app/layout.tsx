@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/site/theme-provider'
 import { siteConfig } from '@/config/site'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
+import { headers } from 'next/headers'
 import { ToastProvider } from '@/components/ui/toast'
 import { CommandProvider } from '@/components/site/command-provider'
 
@@ -44,6 +45,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // 从中间件注入的响应头读取 CSP Nonce
+  const nonce = headers().get('x-nonce') || undefined
   return (
     <html lang="zh-CN" suppressHydrationWarning className={inter.className}>
       <body>
@@ -53,6 +56,7 @@ export default function RootLayout({
             defer
             data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
             src="https://plausible.io/js/script.js"
+            nonce={nonce as any}
           />
         )}
         {/* 主题切换与全局 Toast 提供者 */}

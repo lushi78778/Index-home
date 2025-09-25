@@ -3,12 +3,13 @@
 import MiniSearch from 'minisearch'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type Doc = { id: string; title: string; slug: string; type: 'post' | 'project'; excerpt?: string; tags?: string[] }
 
 export function SearchClient() {
   const sp = useSearchParams()
+  const router = useRouter()
   const [query, setQuery] = useState('')
   const [docs, setDocs] = useState<Doc[]>([])
   const mini = useMemo(
@@ -44,7 +45,14 @@ export function SearchClient() {
         className="w-full max-w-xl rounded-md border px-3 py-2"
         placeholder="搜索文章或项目…"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => {
+          const q = e.target.value
+          setQuery(q)
+          const params = new URLSearchParams(Array.from(sp.entries()))
+          if (q) params.set('q', q)
+          else params.delete('q')
+          router.replace(`/search?${params.toString()}`)
+        }}
       />
       <ul className="space-y-2">
         {results.map((d) => (
