@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getAllPosts } from '@/lib/content'
 import { siteConfig } from '@/config/site'
+import { Pagination } from '@/components/ui/pagination'
 
 export const metadata: Metadata = {
   title: '博客',
@@ -41,6 +42,8 @@ export default function BlogIndex({
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">博客</h1>
+      {/* 可选：当存在 q 等非规范筛选时，可考虑添加 robots noindex
+      {q && <meta name="robots" content="noindex,follow" />} */}
 
       {/* 筛选提示 */}
       <div className="text-sm text-muted-foreground">
@@ -82,29 +85,12 @@ export default function BlogIndex({
       </ul>
 
       {/* 分页 */}
-      <div className="flex items-center justify-between">
-        <Link
-          aria-disabled={current <= 1}
-          href={(current <= 1 ? '#' : `/blog?page=${current - 1}${tag ? `&tag=${encodeURIComponent(tag)}` : ''}`) as any}
-          className="text-sm underline aria-disabled:pointer-events-none aria-disabled:opacity-50"
-        >
-          上一页
-        </Link>
-        <div className="text-sm text-muted-foreground">
-          第 {current} / {totalPages} 页
-        </div>
-        <Link
-          aria-disabled={current >= totalPages}
-          href={
-            (current >= totalPages
-              ? '#'
-              : `/blog?page=${current + 1}${tag ? `&tag=${encodeURIComponent(tag)}` : ''}`) as any
-          }
-          className="text-sm underline aria-disabled:pointer-events-none aria-disabled:opacity-50"
-        >
-          下一页
-        </Link>
-      </div>
+      <Pagination
+        current={current}
+        total={totalPages}
+        basePath="/blog"
+        buildHref={(n) => `/blog?page=${n}${tag ? `&tag=${encodeURIComponent(tag)}` : ''}`}
+      />
     </div>
   )
 }

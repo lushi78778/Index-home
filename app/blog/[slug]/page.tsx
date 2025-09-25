@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { ReadingProgress } from '@/components/site/reading-progress'
 import { siteConfig } from '@/config/site'
 import GithubSlugger from 'github-slugger'
+import { BackToTop } from '@/components/site/back-to-top'
 
 // 可选：按天增量再验证（ISR）
 export const revalidate = 60 * 60 * 24 // 24 小时
@@ -103,6 +104,7 @@ export default function PostPage({ params }: { params: { slug: string } }) {
   return (
     <article className="prose dark:prose-invert max-w-none">
       <ReadingProgress />
+      <BackToTop />
       <h1>{post.title}</h1>
       <div className="text-sm text-muted-foreground">
         {new Date(post.date).toLocaleDateString()} · {post.readingTime} 分钟阅读

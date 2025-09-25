@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 
 // 表单校验规则（最小验证 + 蜜罐）
 const FormSchema = z.object({
@@ -17,6 +18,7 @@ const FormSchema = z.object({
 type FormValues = z.infer<typeof FormSchema>
 
 export default function ContactPage() {
+  const { show } = useToast()
   const [sent, setSent] = useState(false)
   const {
     register,
@@ -36,8 +38,9 @@ export default function ContactPage() {
     if (res.ok) {
       setSent(true)
       reset()
+      show({ title: '提交成功', description: '我们会尽快回复你。' })
     } else {
-      alert('发送失败，请稍后重试')
+      show({ title: '发送失败', description: '请稍后重试。', variant: 'destructive' })
     }
   }
 

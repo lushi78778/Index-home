@@ -2,6 +2,12 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getAllProjects } from '@/lib/content'
 import { siteConfig } from '@/config/site'
+import { Badge } from '@/components/ui/badge'
+import { MDXRemote } from 'next-mdx-remote/rsc'
+import rehypeSlug from 'rehype-slug'
+import rehypeAutolinkHeadings from 'rehype-autolink-headings'
+import remarkGfm from 'remark-gfm'
+import { mdxComponents } from '@/components/mdx/mdx-components'
 
 export const revalidate = 60 * 60 * 24
 
@@ -39,12 +45,30 @@ export default function ProjectPage({ params }: { params: { slug: string } }) {
     <article className="prose dark:prose-invert max-w-none">
       <h1>{project.title}</h1>
       <p className="text-sm text-muted-foreground">{project.description}</p>
-      {project.content && <div dangerouslySetInnerHTML={{ __html: project.content }} />}
-      <ul>
-        {project.tech?.map((t) => (
-          <li key={t}>{t}</li>
-        ))}
-      </ul>
+      {(project.tech?.length || project.tags?.length) ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {project.tech?.map((t) => (
+            <Badge key={t} variant="outline">{t}</Badge>
+          ))}
+          {project.tags?.map((t) => (
+            <Badge key={t} variant="secondary">#{t}</Badge>
+          ))}
+        </div>
+      ) : null}
+
+      {/* 项目正文（MDX 渲染） */}
+      {project.content && (
+        <MDXRemote
+          source={project.content}
+          options={{
+            mdxOptions: {
+              remarkPlugins: [remarkGfm as any],
+              rehypePlugins: [rehypeSlug as any, [rehypeAutolinkHeadings as any, { behavior: 'wrap' }]],
+            },
+          }}
+          components={mdxComponents as any}
+        />
+      )}
 
       {/* 结构化数据：CreativeWork + BreadcrumbList */}
       <script

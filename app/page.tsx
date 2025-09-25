@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { getAllPosts, getAllProjects } from '@/lib/content'
 import { siteConfig } from '@/config/site'
+import Image from 'next/image'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 // 首页：Hero、自我介绍、主要链接、最近文章、精选项目、社交链接
 export default function HomePage() {
@@ -40,12 +43,25 @@ export default function HomePage() {
         ) : (
           <ul className="space-y-3">
             {posts.map((p) => (
-              <li key={p.slug} className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <Link className="font-medium underline" href={`/blog/${p.slug}` as any}>{p.title}</Link>
-                  {p.excerpt && <p className="text-sm text-muted-foreground">{p.excerpt}</p>}
-                </div>
-                <div className="ml-4 shrink-0 text-xs text-muted-foreground">{new Date(p.date).toLocaleDateString()}</div>
+              <li key={p.slug}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      <Link className="underline" href={`/blog/${p.slug}` as any}>{p.title}</Link>
+                    </CardTitle>
+                    {p.excerpt && <CardDescription>{p.excerpt}</CardDescription>}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex flex-wrap gap-2">
+                        {p.tags?.slice(0, 3).map((t) => (
+                          <Badge key={t} variant="secondary">#{t}</Badge>
+                        ))}
+                      </div>
+                      <div>{new Date(p.date).toLocaleDateString()}</div>
+                    </div>
+                  </CardContent>
+                </Card>
               </li>
             ))}
           </ul>
@@ -62,9 +78,22 @@ export default function HomePage() {
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2">
             {projects.map((p) => (
-              <li key={p.slug} className="rounded-lg border p-4">
-                <Link className="text-lg font-medium underline" href={`/projects/${p.slug}` as any}>{p.title}</Link>
-                <p className="text-sm text-muted-foreground mt-1">{p.description}</p>
+              <li key={p.slug}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      <Link className="underline" href={`/projects/${p.slug}` as any}>{p.title}</Link>
+                    </CardTitle>
+                    <CardDescription>{p.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {p.tech?.slice(0, 6).map((t) => (
+                        <Badge key={t} variant="outline">{t}</Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </li>
             ))}
           </ul>
