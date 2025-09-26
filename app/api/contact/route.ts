@@ -3,6 +3,9 @@ import { z } from 'zod'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
+// Use Node.js runtime to allow importing server-only email libraries safely
+export const runtime = 'nodejs'
+
 // Server 端表单校验（与客户端一致）
 const Schema = z.object({
   name: z.string().min(2),
@@ -44,13 +47,18 @@ export async function POST(req: Request) {
   }
 
   try {
-  const resendPkg = 'resend'
-  const mod = await import(resendPkg as any).catch(() => null as any)
-    if (!mod?.Resend) {
+    // Prefer static specifier import to avoid webpack critical dependency warning
+    let Resend: any = null
+    try {
+      ;({ Resend } = await import('resend'))
+    } catch {
+      Resend = null
+    }
+    if (!Resend) {
       // 依赖未安装，视为成功（示例环境）
       return NextResponse.json({ ok: true })
     }
-    const resend = new mod.Resend(apiKey)
+    const resend = new Resend(apiKey)
     await resend.emails.send({
       from: 'Website Contact <noreply@xray.top>',
       to,
