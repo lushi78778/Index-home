@@ -14,6 +14,7 @@ import GithubSlugger from 'github-slugger'
 import { BackToTop } from '@/components/site/back-to-top'
 import { JsonLd } from '@/components/site/json-ld'
 import { GiscusComments } from '@/components/site/giscus'
+import { relatedByTags } from '@/lib/recommend'
 
 // 可选：按天增量再验证（ISR）
 export const revalidate = 60 * 60 * 24 // 24 小时
@@ -102,6 +103,25 @@ export default function PostPage({ params }: { params: { slug: string } }) {
   const next = idx < posts.length - 1 ? posts[idx + 1] : null
   const toc = extractHeadings(post.content)
   const pageUrl = `${siteConfig.url}/blog/${post.slug}`
+  const seriesPosts = post.series
+    ? posts
+        .filter((p) => p.series === post.series)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    : []
+  const seriesIndex = post.series
+    ? seriesPosts.findIndex((p) => p.slug === post.slug)
+    : -1
+
+  // 简易相关推荐：按标签交集评分，排除当前文章，取前 4 条
+  // 若没有任何标签命中，则优先回退到同系列文章；再不行，回退到最新文章
+  let related = relatedByTags(post, posts, 4)
+  if (related.length === 0) {
+    if (seriesPosts.length > 1) {
+      related = seriesPosts.filter((p) => p.slug !== post.slug).slice(0, 4)
+    } else {
+      related = posts.filter((p) => p.slug !== post.slug).slice(0, 4)
+    }
+  }
 
   return (
     <article className="prose dark:prose-invert max-w-none">
@@ -143,6 +163,27 @@ export default function PostPage({ params }: { params: { slug: string } }) {
         components={mdxComponents as any}
       />
 
+      {/* 系列导航 */}
+      {post.series && seriesPosts.length > 0 && (
+        <section className="mt-6 rounded-md border p-4">
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <div className="font-medium">系列：{post.series}</div>
+            <div className="text-muted-foreground">{seriesIndex + 1} / {seriesPosts.length}</div>
+          </div>
+          <ol className="list-decimal pl-5 text-sm">
+            {seriesPosts.map((sp) => (
+              <li key={sp.slug} className="mb-1">
+                {sp.slug === post.slug ? (
+                  <span className="font-medium">{sp.title}</span>
+                ) : (
+                  <Link className="underline" href={`/blog/${sp.slug}` as any}>{sp.title}</Link>
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       {/* 评论区：紧跟在正文后，位于上下篇导航之前 */}
       <GiscusComments />
 
@@ -166,8 +207,22 @@ export default function PostPage({ params }: { params: { slug: string } }) {
         </div>
       </div>
 
+      {/* 相关推荐 */}
+      {related.length > 0 && (
+        <section className="mt-8 rounded-md border p-4" aria-label="相关推荐">
+          <div className="mb-2 font-medium">相关推荐</div>
+          <ul className="list-disc pl-5 text-sm">
+            {related.map((rp) => (
+              <li key={rp.slug}>
+                <Link className="underline" href={`/blog/${rp.slug}` as any}>{rp.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-      {/* 结构化数据：BlogPosting + BreadcrumbList + Person */}
+
+      {/* 结构化数据：BlogPosting + （可选）CreativeWorkSeries + BreadcrumbList + Person */}
       <JsonLd
         data={{
           '@context': 'https://schema.org',
@@ -182,9 +237,35 @@ export default function PostPage({ params }: { params: { slug: string } }) {
           publisher: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
           image: post.ogImage || post.cover ? [post.ogImage || (post.cover as string)] : undefined,
           keywords: post.tags && post.tags.length ? post.tags.join(', ') : undefined,
-          isPartOf: { '@type': 'Blog', name: siteConfig.name, url: siteConfig.url },
+          isPartOf: post.series
+            ? [
+                { '@type': 'Blog', name: siteConfig.name, url: siteConfig.url },
+                { '@type': 'CreativeWorkSeries', name: post.series },
+              ]
+            : { '@type': 'Blog', name: siteConfig.name, url: siteConfig.url },
         }}
       />
+      {post.series && seriesPosts.length > 0 && (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'CreativeWorkSeries',
+            name: post.series,
+            url: `${siteConfig.url}/blog`,
+            sameAs: undefined,
+            // 用 ItemList 表示系列内文章顺序
+            hasPart: {
+              '@type': 'ItemList',
+              itemListElement: seriesPosts.map((sp, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                url: `${siteConfig.url}/blog/${sp.slug}`,
+                name: sp.title,
+              })),
+            },
+          }}
+        />
+      )}
       <JsonLd
         data={{
           '@context': 'https://schema.org',
