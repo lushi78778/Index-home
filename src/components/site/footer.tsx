@@ -7,7 +7,7 @@ export function Footer() {
   return (
     <footer className="relative border-t py-8 text-center text-sm text-muted-foreground">
       <div className="container mx-auto px-4 space-y-2">
-        <div>© {new Date().getFullYear()} xray.top · 透视实验室 · 保留所有权利</div>
+        <div>© {new Date().getFullYear()} {siteConfig.name} · 保留所有权利</div>
         {/* 联系入口放在底部 */}
         <div>
           <Link href="/contact" className="underline">联系</Link>

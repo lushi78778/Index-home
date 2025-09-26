@@ -13,7 +13,7 @@ export default function HomePage() {
   return (
     <div className="space-y-10">
       <section className="space-y-3">
-        <h1 className="text-3xl font-bold">你好，我是 XRAY</h1>
+        <h1 className="text-3xl font-bold">你好，我是 {siteConfig.author.name}</h1>
         <p className="text-muted-foreground">这里是我的个人主页，专注于 Web、前端工程与数字产品。</p>
         <div className="flex gap-3">
           <Link href="/blog" className="underline">阅读博客</Link>

@@ -21,7 +21,7 @@ export default function ResumePage() {
   }
 
   const experiences = [
-    { company: 'xray.top', role: '全栈工程师 / 技术负责人', period: '2024 - 至今', bullets: [
+    { company: siteConfig.shortName, role: '全栈工程师 / 技术负责人', period: '2024 - 至今', bullets: [
       '负责 Next.js 平台与组件系统建设，推动性能优化与工程效率提升',
       '实践 Edge / ISR / RSC，沉淀稳定的内容工作流与 SEO 方案',
     ] },

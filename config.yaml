@@ -49,7 +49,7 @@ runtime:
   host: "localhost"
   port: 3000
   # ISR 按需刷新接口的密钥（/api/revalidate?secret=...），生产环境替换为强随机值
-  revalidateSecret: "dev-secret"
+  revalidateSecret: "dev-sec54f2412345678909876543edfty765redfghjiuytredfcvbhjkiuy"
   # 若使用 Plausible 分析，这里填你的站点域名，否则留空不注入脚本
   plausibleDomain: "xray.top"
   # 统一环境变量（生成到 .env.local）
@@ -62,10 +62,10 @@ runtime:
 
     # ——— 邮件发送（Resend）与联系表单 ———
     # Resend API Key（服务端密钥），用于发送邮件（如联系表单/订阅确认）；生产必须配置
-    RESEND_API_KEY: ""
+    RESEND_API_KEY: "re_VcbvYDia_Nsr3GKs8XwS1tq1fL9GovW7g"
     # 联系表单收件地址（支持多收件人用逗号分隔），例如：me@example.com,other@example.com
     CONTACT_TO_EMAIL: "lushi78778@xray.top"
-  # revalidate 接口的密钥由 runtime.revalidateSecret 自动生成到 .env.local
+    # revalidate 接口的密钥由 runtime.revalidateSecret 自动生成到 .env.local
 
     # ——— Upstash Redis（限流/缓存/存储） ———
     # Upstash REST URL 与 Token，若启用限流/缓存等功能需配置，否则留空
@@ -74,15 +74,15 @@ runtime:
 
     # ——— Giscus 评论系统（GitHub Discussions） ———
     # 仓库（owner/repo）、仓库 ID、分类名、分类 ID；必须成套配置
-    NEXT_PUBLIC_GISCUS_REPO: ""
-    NEXT_PUBLIC_GISCUS_REPO_ID: ""
-    NEXT_PUBLIC_GISCUS_CATEGORY: ""
-    NEXT_PUBLIC_GISCUS_CATEGORY_ID: ""
+    NEXT_PUBLIC_GISCUS_REPO: "lushi78778/Index-home"
+    NEXT_PUBLIC_GISCUS_REPO_ID: "R_kgDOP1vONA"
+    NEXT_PUBLIC_GISCUS_CATEGORY: "Announcements"
+    NEXT_PUBLIC_GISCUS_CATEGORY_ID: "DIC_kwDOP1vONM4Cv4hz"
 
     # ——— Buttondown 邮件订阅 ———
     # Buttondown API Token（服务端密钥），用于订阅/双重确认等；使用该服务时必须配置
-    BUTTONDOWN_API_TOKEN: ""
+    BUTTONDOWN_API_TOKEN: "42898cd5-7ed0-49ea-977b-c21d467630ed"
     # 是否启用双重确认（默认 true），生产环境建议启用
     BUTTONDOWN_DOUBLE_OPT_IN: true
     # 订阅邮件的发件人（显示名 <地址>），例如："XRAY <noreply@example.com>"
-    NEWSLETTER_FROM: ""
+    NEWSLETTER_FROM: "XRAY <noreply@xray.top>"

@@ -64,8 +64,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true })
     }
     const resend = new Resend(apiKey)
+    // 发件人：优先使用 NEWSLETTER_FROM，否则使用 shortName + noreply@域名
+    const defaultFromDomain = process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname : 'example.com'
+    const fromDisplay = process.env.NEWSLETTER_FROM || `Website Contact <noreply@${defaultFromDomain}>`
     await resend.emails.send({
-      from: 'Website Contact <noreply@xray.top>',
+      from: fromDisplay,
       to,
       subject: `[Contact] ${parsed.data.name}`,
       text: `Name: ${parsed.data.name}\nEmail: ${parsed.data.email}\n\n${parsed.data.message}`,

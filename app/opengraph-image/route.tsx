@@ -1,10 +1,11 @@
 import { ImageResponse } from '@vercel/og'
+import { siteConfig } from '@/config/site'
 
 export const runtime = 'edge'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const title = searchParams.get('title') || 'xray.top'
+  const title = searchParams.get('title') || siteConfig.shortName
   return new ImageResponse(
     (
       <div
