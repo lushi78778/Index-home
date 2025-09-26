@@ -14,4 +14,14 @@ describe('content loaders', () => {
     expect(Array.isArray(projects)).toBe(true)
     expect(projects.some(p => p.slug === 'demo-project')).toBe(true)
   })
+
+  it('should exclude draft and future posts in prod mode', () => {
+    // Simulate production behavior by calling without includeDraft and filtering by date
+    const now = Date.now()
+    const posts = getAllPosts({ includeDraft: false })
+    // none should be future-dated
+    expect(posts.every(p => new Date(p.date).getTime() <= now)).toBe(true)
+    // and none with draft: true
+    expect(posts.every(p => !p.draft)).toBe(true)
+  })
 })
