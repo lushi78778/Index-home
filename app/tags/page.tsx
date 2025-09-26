@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getAllTags } from '@/lib/content'
 import { siteConfig } from '@/config/site'
+import { JsonLd } from '@/components/site/json-ld'
 
 export const metadata: Metadata = {
   title: '标签',
@@ -27,6 +28,16 @@ export default function TagsIndexPage() {
           </li>
         ))}
       </ul>
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
+            { '@type': 'ListItem', position: 2, name: '标签', item: `${siteConfig.url}/tags` },
+          ],
+        }}
+      />
     </div>
   )
 }

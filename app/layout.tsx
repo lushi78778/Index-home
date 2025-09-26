@@ -45,14 +45,17 @@ export const metadata: Metadata = {
     url: siteConfig.url,
     siteName: siteConfig.shortName,
     type: 'website',
+    images: [`${siteConfig.url}/opengraph-image`],
   },
   twitter: { // Twitter Cards (用于在 Twitter 上分享)
     card: 'summary_large_image',
     title: siteConfig.name,
     description: siteConfig.description,
+    images: [`${siteConfig.url}/opengraph-image`],
   },
   alternates: {
     canonical: '/', // 指定规范 URL
+    types: { 'application/rss+xml': `${siteConfig.url}/rss.xml` },
   },
 }
 

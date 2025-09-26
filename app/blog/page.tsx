@@ -4,6 +4,8 @@ import { getAllPosts } from '@/lib/content'
 import { siteConfig } from '@/config/site'
 import { Pagination } from '@/components/ui/pagination'
 import { redirect } from 'next/navigation'
+import { BLOG_PAGE_SIZE } from '@/config/constants'
+import { JsonLd } from '@/components/site/json-ld'
 
 export async function generateMetadata({
   searchParams,
@@ -20,7 +22,7 @@ export async function generateMetadata({
 }
 
 // 文章列表页
-// - 支持分页：?page=1&pageSize=10
+// - 支持分页：?page=1（每页大小由常量 BLOG_PAGE_SIZE 控制）
 // - 支持标签筛选：?tag=xxx
 // - 可扩展搜索：?q=关键词（当前示例未启用全文搜索）
 export default function BlogIndex({
@@ -29,7 +31,7 @@ export default function BlogIndex({
   searchParams: { page?: string; pageSize?: string; tag?: string; q?: string }
 }) {
   const page = Math.max(1, Number(searchParams.page || '1'))
-  const pageSize = Math.min(50, Math.max(1, Number(searchParams.pageSize || '10')))
+  const pageSize = BLOG_PAGE_SIZE
   const tag = searchParams.tag?.trim()
   const q = searchParams.q?.trim().toLowerCase()
 
@@ -60,6 +62,10 @@ export default function BlogIndex({
 
   return (
     <div className="space-y-6">
+      {/* rel next for the first page when there are more pages */}
+      {current < totalPages && !tag && !q && (
+        <link rel="next" href={`${siteConfig.url}/blog/page/${current + 1}`} />
+      )}
       <h1 className="text-2xl font-bold">博客</h1>
       {/* 可选：当存在 q 等非规范筛选时，可考虑添加 robots noindex
       {q && <meta name="robots" content="noindex,follow" />} */}
@@ -112,6 +118,34 @@ export default function BlogIndex({
           const base = `/blog/page/${n}`
           if (tag) return `${base}?tag=${encodeURIComponent(tag)}`
           return base
+        }}
+      />
+
+      {/* 结构化数据：当前页文章列表 ItemList + 面包屑 */}
+      {pagePosts.length > 0 && (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: current > 1 ? `博客 - 第 ${current} 页` : '博客',
+            itemListElement: pagePosts.map((p, i) => ({
+              '@type': 'ListItem',
+              position: i + 1 + (current - 1) * pageSize,
+              name: p.title,
+              url: `${siteConfig.url}/blog/${p.slug}`,
+            })),
+            numberOfItems: pagePosts.length,
+          }}
+        />
+      )}
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
+            { '@type': 'ListItem', position: 2, name: '博客', item: `${siteConfig.url}/blog` },
+          ],
         }}
       />
     </div>

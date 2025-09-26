@@ -4,6 +4,7 @@ import { siteConfig } from '@/config/site'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { JsonLd } from '@/components/site/json-ld'
 
 // 首页：Hero、自我介绍、主要链接、最近文章、精选项目、社交链接
 export default function HomePage() {
@@ -101,21 +102,48 @@ export default function HomePage() {
       </section>
 
       {/* 结构化数据：Person（站点主体） */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            {
-              '@context': 'https://schema.org',
-              '@type': 'Person',
-              name: siteConfig.author.name,
-              url: siteConfig.url,
-            },
-            null,
-            0,
-          ),
-        }}
-      />
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: siteConfig.author.name,
+        url: siteConfig.url,
+      }} />
+      {/* 结构化数据：WebSite + Sitelinks searchbox */}
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: siteConfig.name,
+        url: siteConfig.url,
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: `${siteConfig.url}/search?q={search_term_string}`,
+          'query-input': 'required name=search_term_string',
+        },
+      }} />
+      {/* 结构化数据：最近文章列表 ItemList */}
+      {posts.length > 0 && (
+        <JsonLd data={{
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: '最近文章',
+          itemListElement: posts.map((p, i) => ({
+            '@type': 'ListItem', position: i + 1, name: p.title, url: `${siteConfig.url}/blog/${p.slug}`
+          })),
+          numberOfItems: posts.length,
+        }} />
+      )}
+      {/* 结构化数据：精选项目列表 ItemList */}
+      {projects.length > 0 && (
+        <JsonLd data={{
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: '精选项目',
+          itemListElement: projects.map((p, i) => ({
+            '@type': 'ListItem', position: i + 1, name: p.title, url: `${siteConfig.url}/projects/${p.slug}`
+          })),
+          numberOfItems: projects.length,
+        }} />
+      )}
     </div>
   )
 }
