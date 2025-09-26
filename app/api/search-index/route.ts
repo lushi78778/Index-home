@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import crypto from 'node:crypto'
 import { getAllPosts, getAllProjects } from '@/lib/content'
 
 export const revalidate = 3600 // 缓存 1 小时
@@ -16,7 +17,7 @@ function stripMarkdown(md?: string) {
 }
 
 // 构建静态搜索索引：title/slug/type/excerpt/snippet/content(纯文本,裁剪)/tags
-export async function GET() {
+export async function GET(req: Request) {
   const posts = getAllPosts().map((p) => {
     const text = stripMarkdown(p.content)
     return {
@@ -43,5 +44,23 @@ export async function GET() {
       type: 'project' as const,
     }
   })
-  return NextResponse.json([...posts, ...projects])
+  const body = JSON.stringify([...posts, ...projects])
+  const etag = 'W/"' + crypto.createHash('sha1').update(body).digest('hex') + '"'
+  const ifNoneMatch = req.headers.get('if-none-match')
+  if (ifNoneMatch && ifNoneMatch === etag) {
+    return new NextResponse(null, {
+      status: 304,
+      headers: {
+        ETag: etag,
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
+      },
+    })
+  }
+  return new NextResponse(body, {
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      ETag: etag,
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
+    },
+  })
 }

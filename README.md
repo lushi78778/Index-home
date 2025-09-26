@@ -73,6 +73,24 @@
     ```
     现在，你可以在 [http://localhost:3000](http://localhost:3000) 访问你的本地站点。
 
+## 开发
+
+- 本地开发：`npm run dev`（若 3000 端口被占用，会自动切换到 3001）。本仓库的 Playwright 测试在本地默认连 3001。
+- 配置：编辑 `config.yaml` 后，运行 `npm run config` 生成 `src/config/site.ts` 和合并 `.env.local`（.env.local 已忽略，不会提交）。
+- 构建：`npm run build`，生产模式启用 PWA。
+
+## 测试
+
+- 单元测试：`npm test`
+- E2E：`npm run e2e`
+
+## 目录
+
+- 内容：`/content`（MDX）
+- 页面：`/app`
+- 组件：`/src/components`
+- 配置脚本：`/scripts/config.mjs`（从 `config.yaml` 生成运行时配置）
+
 ## 📜 Scripts
 
 - `npm run dev`: 启动开发服务器。

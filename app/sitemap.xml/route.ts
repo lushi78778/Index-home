@@ -58,5 +58,10 @@ ${getAllTags()
   .join('\n')}
 </urlset>`
   const withPages = xml.replace('</urlset>', `${pageUrls}\n</urlset>`)
-  return new Response(withPages, { headers: { 'Content-Type': 'application/xml' } })
+  return new Response(withPages, {
+    headers: {
+      'Content-Type': 'application/xml',
+      'Cache-Control': 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400',
+    },
+  })
 }

@@ -32,9 +32,14 @@ export async function POST(req: Request) {
   if (redisUrl && redisToken) {
     const redis = new Redis({ url: redisUrl, token: redisToken })
     const ratelimit = new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, '5 m') })
-    const { success, reset } = await ratelimit.limit(`contact:${ip}`)
+    const { success, reset, limit, remaining } = await ratelimit.limit(`contact:${ip}`)
     if (!success) {
-      return NextResponse.json({ ok: false, error: 'rate_limited', reset }, { status: 429 })
+      const nowSec = Math.floor(Date.now() / 1000)
+      const retryAfter = Math.max(1, (reset || nowSec) - nowSec)
+      const headers: Record<string, string> = { 'Retry-After': String(retryAfter) }
+      if (typeof limit === 'number') headers['X-RateLimit-Limit'] = String(limit)
+      if (typeof remaining === 'number') headers['X-RateLimit-Remaining'] = String(remaining)
+      return NextResponse.json({ ok: false, error: 'rate_limited', reset }, { status: 429, headers })
     }
   }
 
