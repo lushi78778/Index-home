@@ -71,7 +71,7 @@ test-watch:
 ci: typecheck test build
 
 clean:
-	rm -rf .next out dist .turbo
+	rm -rf .next out dist .turbo .next/types public/sw.js public/workbox-*.js public/fallback-*.js
 
 revalidate:
 	@echo "Revalidating: http://$(HOST):$(PORT)/api/revalidate?path=$(REVALIDATE_PATH)"

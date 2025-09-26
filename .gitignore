@@ -106,6 +106,10 @@ web_modules/
 # Next.js build output
 .next
 out
+public/sw.js
+public/workbox-*.js
+public/fallback-*.js
+/.next/types
 
 # Nuxt.js build / generate output
 .nuxt
