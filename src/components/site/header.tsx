@@ -3,20 +3,21 @@
 import Link from 'next/link'
 import { ThemeToggle } from './theme-toggle'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCommand } from './command-provider'
 import { Tooltip } from '@/components/ui/tooltip'
-import { useEffect, useMemo, useState as useStateReact } from 'react'
 import { useTranslations } from 'next-intl'
+import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 // 站点头部导航
 export function Header() {
   const t = useTranslations()
-  const [locale, setLocale] = useStateReact('zh')
+  const [locale, setLocale] = useState('zh')
+  const [mobileOpen, setMobileOpen] = useState(false)
   useEffect(() => {
     const v = document.cookie.match(/(?:^|; )NEXT_LOCALE=([^;]+)/)?.[1]
     setLocale(v || 'zh')
-  }, [])
+  }, [setLocale])
   // 采用“无前缀 URL”，由中间件和 RootLayout 决定当前语言；
   // 如果用户访问了 /zh 或 /en，会被 308 重定向到无前缀。
   const nav = [
@@ -53,7 +54,7 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-2 md:flex">
           {/* 命令面板入口 */}
           <Tooltip label="全局搜索 (Ctrl/⌘+K)">
             <button onClick={open} className="h-8 rounded-md border px-2 text-sm hover:bg-accent">命令</button>
@@ -75,7 +76,50 @@ export function Header() {
           </button>
           <ThemeToggle />
         </div>
+        {/* 移动端：汉堡菜单 */}
+        <div className="flex items-center gap-2 md:hidden">
+          <button
+            aria-label="打开菜单"
+            className="h-8 rounded-md border px-2 text-sm hover:bg-accent"
+            onClick={() => setMobileOpen(true)}
+          >
+            菜单
+          </button>
+        </div>
       </div>
+      {/* 移动端抽屉（使用 Dialog 实现简易 Sheet） */}
+      <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
+        <div className="flex flex-col gap-3">
+          <DialogHeader>
+            <DialogTitle>导航</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center gap-2">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && (setMobileOpen(false), goSearch())}
+              placeholder={t('search.placeholder')}
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+              aria-label="搜索"
+            />
+            <button onClick={() => { setMobileOpen(false); goSearch() }} className="h-9 rounded-md border px-2 text-sm hover:bg-accent">{t('nav.search')}</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {nav.map((item) => (
+              <Link key={item.href} href={item.href as any} className="rounded-md border px-3 py-2 text-sm hover:bg-accent" onClick={() => setMobileOpen(false)}>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <button onClick={open} className="h-9 rounded-md border px-2 text-sm hover:bg-accent">命令</button>
+            <button onClick={() => { toggleLocale(); }} className="h-9 rounded-md border px-2 text-sm hover:bg-accent">
+              {locale === 'zh' ? '切换到 EN' : '切换到 中文'}
+            </button>
+            <ThemeToggle />
+          </div>
+        </div>
+      </Dialog>
     </header>
   )
 }

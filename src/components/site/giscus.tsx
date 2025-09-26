@@ -21,6 +21,8 @@ export function GiscusComments() {
         s.src = 'https://giscus.app/client.js'
         s.async = true
         s.crossOrigin = 'anonymous'
+        // 使用自定义主题，内部 @import giscus 官方主题并覆盖 max-width 使其可平铺
+  const themeUrl = `${location.origin}/giscus-theme.css`
         s.setAttribute('data-repo', repo!)
         s.setAttribute('data-repo-id', repoId!)
         s.setAttribute('data-category', category!)
@@ -30,7 +32,7 @@ export function GiscusComments() {
         s.setAttribute('data-reactions-enabled', '1')
         s.setAttribute('data-emit-metadata', '0')
         s.setAttribute('data-input-position', 'bottom')
-        s.setAttribute('data-theme', 'preferred_color_scheme')
+        s.setAttribute('data-theme', themeUrl)
         s.setAttribute('data-lang', 'zh-CN')
         el.appendChild(s)
         setLoaded(true)
@@ -42,5 +44,11 @@ export function GiscusComments() {
   }, [enabled, loaded])
 
   if (!enabled) return null
-  return <section ref={divRef} className="mt-10" />
+  return (
+    <section
+      ref={divRef}
+      className="mt-6 not-prose w-full border-t pt-6"
+      aria-label="文章评论"
+    />
+  )
 }

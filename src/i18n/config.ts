@@ -13,7 +13,16 @@ export const locales = siteConfig.locales
 export type Locale = (typeof locales)[number]
 export const defaultLocale: Locale = siteConfig.defaultLocale
 
-export default getRequestConfig(async ({ locale }) => {
+export default getRequestConfig(async () => {
+  // 兼容：在新版本使用 requestLocale()，老版本则没有该 API
+  let hinted: string | undefined = undefined
+  try {
+    // 动态引入，避免在旧版 next-intl 上的类型错误
+    const mod = require('next-intl/server') as any
+    if (typeof mod.requestLocale === 'function') {
+      hinted = await mod.requestLocale()
+    }
+  } catch {}
   // 在不使用路径前缀的情况下（无 /en、/zh 段），`locale` 可能为空。
   // 我们采用“Cookie -> 自定义请求头 -> Accept-Language -> 默认值”的顺序来解析。
   function resolveLocale(): string {
@@ -43,8 +52,8 @@ export default getRequestConfig(async ({ locale }) => {
       // 在某些环境拿不到 next/headers 时，忽略错误并走下面的回退
     }
 
-    // 4) 若 next-intl 仍传入了 locale，且合法，则使用
-    if (locale && locales.includes(locale as any)) return locale
+  // 4) 若 requestLocale() 有返回且合法，则使用
+  if (hinted && locales.includes(hinted as any)) return hinted
 
     // 5) 最后回退到默认语言
     return defaultLocale

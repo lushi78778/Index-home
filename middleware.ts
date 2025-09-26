@@ -76,7 +76,7 @@ export function middleware(req: NextRequest) {
     "style-src 'self' 'unsafe-inline'", // 样式来源：允许同源和内联样式。
     "img-src 'self' data: https:", // 图片来源：允许同源、data URI 和所有 https 来源。
     "font-src 'self' data:", // 字体来源：允许同源和 data URI。
-    "connect-src 'self' https://plausible.io", // API 请求来源：允许连接到同源和 Plausible。
+  "connect-src 'self' https://plausible.io https://giscus.app", // 允许同源、Plausible 与 giscus。
     "frame-src 'self' https://giscus.app", // Iframe 来源：允许嵌入 Giscus 评论。
     "frame-ancestors 'none'", // 禁止页面被嵌入到其他网站的 iframe 中。
     "form-action 'self'", // 表单提交目标：只允许提交到同源。

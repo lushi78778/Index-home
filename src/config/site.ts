@@ -6,15 +6,15 @@ export const siteConfig = {
   "name": "xray.top 透视实验室",
   "shortName": "xray.top",
   "description": "一个现代化、内容驱动的个人主页，集成了博客、项目展示、笔记等功能。",
-  "url": "https://example.com",
+  "url": "https://xray.top",
   "author": {
     "name": "XRAY",
-    "url": "https://example.com/about"
+    "url": "https://xray.top/about"
   },
   "social": {
-    "github": "https://github.com/yourname",
-    "twitter": "https://x.com/yourname",
-    "email": "me@example.com"
+    "github": "https://github.com/lushi78778",
+    "twitter": "https://x.com/lushi78778",
+    "email": "lushi78778@xray.top"
   },
   "locales": [
     "zh",

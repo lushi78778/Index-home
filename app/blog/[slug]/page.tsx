@@ -143,7 +143,12 @@ export default function PostPage({ params }: { params: { slug: string } }) {
         components={mdxComponents as any}
       />
 
+      {/* 评论区：紧跟在正文后，位于上下篇导航之前 */}
+      <GiscusComments />
+
+      {/* 分隔线下移到评论之后 */}
       <hr />
+
       <div className="mt-6 flex justify-between text-sm">
         <div>
           {prev && (
@@ -161,8 +166,6 @@ export default function PostPage({ params }: { params: { slug: string } }) {
         </div>
       </div>
 
-  {/* 可选：Giscus 评论 */}
-  <GiscusComments />
 
       {/* 结构化数据：BlogPosting + BreadcrumbList + Person */}
       <JsonLd

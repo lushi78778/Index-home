@@ -56,11 +56,16 @@
     npm install
     ```
 
-3.  **配置环境变量**
-    复制 `.env.example` 文件为 `.env.local`，并根据需要填写其中的变量，例如 Giscus 和邮件服务的配置。
-    ```bash
-    cp env.example .env.local
-    ```
+3.  **配置站点与环境变量（集中式）**
+    - 编辑根目录下的 `config.yaml`，填写站点信息（site.*）以及运行时密钥（runtime.env）。
+    - 运行生成脚本：
+      ```bash
+      npm run config
+      ```
+      它会：
+      - 生成/覆盖 `src/config/site.ts`（供站内导入使用）
+      - 合并生成 `.env.local`（以 `config.yaml` 的 `runtime.env` 为准覆盖同名键）
+    - 注意：不要在 `config.yaml` 中放入真正的生产密钥并提交仓库；生产环境请通过平台的环境变量配置（如 Vercel）注入。
 
 4.  **启动开发服务器**
     ```bash
