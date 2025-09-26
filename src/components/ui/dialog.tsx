@@ -7,7 +7,12 @@ export function Dialog({ open, onOpenChange, children }: { open: boolean; onOpen
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-      <div className="relative z-10 w-[92vw] max-w-lg rounded-lg border bg-background p-4 shadow-lg">
+      {/* 提升可访问性：显式声明为对话框并设置 aria-modal */}
+      <div
+        className="relative z-10 w-[92vw] max-w-lg rounded-lg border bg-background p-4 shadow-lg"
+        role="dialog"
+        aria-modal="true"
+      >
         {children}
       </div>
     </div>
