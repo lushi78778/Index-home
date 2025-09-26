@@ -3,6 +3,7 @@ import { siteConfig } from '@/config/site'
 import { getAllNotes } from '@/lib/content'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { JsonLd } from '@/components/site/json-ld'
 
 export const metadata: Metadata = {
   title: 'Notes',
@@ -62,6 +63,31 @@ export default function NotesPage({ searchParams }: { searchParams: { kind?: 'no
           <li className="text-sm text-muted-foreground">暂无内容。</li>
         )}
       </ul>
+      {/* JSON-LD：当前列表作为 ItemList + 面包屑 */}
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: kind ? (kind === 'note' ? '笔记' : '书签') : '全部条目',
+          itemListElement: notes.map((n, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: n.title,
+            url: n.kind === 'bookmark' && n.url ? n.url : `${siteConfig.url}/notes`,
+          })),
+          numberOfItems: notes.length,
+        }}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
+            { '@type': 'ListItem', position: 2, name: 'Notes', item: `${siteConfig.url}/notes` },
+          ],
+        }}
+      />
     </div>
   )
 }

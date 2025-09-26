@@ -101,13 +101,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* 结构化数据：Person（站点主体） */}
-      <JsonLd data={{
-        '@context': 'https://schema.org',
-        '@type': 'Person',
-        name: siteConfig.author.name,
-        url: siteConfig.url,
-      }} />
+      {/* 根布局已注入 Person（站点主体），此处去重 */}
       {/* 结构化数据：WebSite + Sitelinks searchbox */}
       <JsonLd data={{
         '@context': 'https://schema.org',

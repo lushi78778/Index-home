@@ -141,6 +141,7 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
+            aria-label="命令面板"
           >
             <div className="flex items-center gap-2 border-b px-2 py-1">
               <kbd className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'}+K</kbd>

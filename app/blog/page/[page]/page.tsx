@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { getAllPosts } from '@/lib/content'
 import { siteConfig } from '@/config/site'
 import { BLOG_PAGE_SIZE } from '@/config/constants'
+import { JsonLd } from '@/components/site/json-ld'
 
 export const revalidate = 60 * 10
 
@@ -67,6 +68,37 @@ export default function BlogPageByNumber({ params }: { params: { page: string } 
           下一页
         </Link>
       </div>
+
+      {/* 结构化数据：当前分页文章列表 ItemList + 面包屑 */}
+      {pagePosts.length > 0 && (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            name: current > 1 ? `博客 - 第 ${current} 页` : '博客',
+            itemListElement: pagePosts.map((p, i) => ({
+              '@type': 'ListItem',
+              position: i + 1 + (current - 1) * pageSize,
+              name: p.title,
+              url: `${siteConfig.url}/blog/${p.slug}`,
+            })),
+            numberOfItems: pagePosts.length,
+          }}
+        />
+      )}
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
+            { '@type': 'ListItem', position: 2, name: '博客', item: `${siteConfig.url}/blog` },
+            ...(current > 1
+              ? [{ '@type': 'ListItem', position: 3, name: `第 ${current} 页`, item: `${siteConfig.url}/blog/page/${current}` }]
+              : []),
+          ],
+        }}
+      />
     </div>
   )
 }

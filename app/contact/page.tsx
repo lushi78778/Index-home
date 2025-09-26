@@ -40,7 +40,13 @@ export default function ContactPage() {
       reset()
       show({ title: '提交成功', description: '我们会尽快回复你。' })
     } else {
-      show({ title: '发送失败', description: '请稍后重试。', variant: 'destructive' })
+      if (res.status === 429) {
+        const retryAfter = Number(res.headers.get('Retry-After') || '0')
+        const seconds = isNaN(retryAfter) ? 60 : Math.max(1, retryAfter)
+        show({ title: '请求过于频繁', description: `请在 ${seconds} 秒后重试。`, variant: 'destructive' })
+      } else {
+        show({ title: '发送失败', description: '请稍后重试。', variant: 'destructive' })
+      }
     }
   }
 

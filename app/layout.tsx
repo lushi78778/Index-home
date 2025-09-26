@@ -25,6 +25,7 @@ import { ToastProvider } from '@/components/ui/toast'
 import { CommandProvider } from '@/components/site/command-provider'
 import { NextIntlClientProvider } from 'next-intl'
 import { setRequestLocale } from 'next-intl/server'
+import { JsonLd } from '@/components/site/json-ld'
 
 // 使用 next/font 优化字体加载。
 // 这会将 Inter 字体在构建时下载到服务器，并在加载时自托管，
@@ -123,6 +124,58 @@ export default async function RootLayout({
                   {children}
                 </main>
                 <Footer />
+
+                {/* 全站结构化数据：WebSite + SearchAction */}
+                <JsonLd
+                  data={{
+                    '@context': 'https://schema.org',
+                    '@type': 'WebSite',
+                    name: siteConfig.name,
+                    url: siteConfig.url,
+                    potentialAction: {
+                      '@type': 'SearchAction',
+                      target: `${siteConfig.url}/search?q={search_term_string}`,
+                      'query-input': 'required name=search_term_string',
+                    },
+                  }}
+                />
+
+                {/* 全站结构化数据：Person（作者/站点主体） */}
+                <JsonLd
+                  data={{
+                    '@context': 'https://schema.org',
+                    '@type': 'Person',
+                    name: siteConfig.author.name,
+                    url: siteConfig.author.url,
+                    sameAs: [
+                      siteConfig.social?.github,
+                      siteConfig.social?.twitter,
+                      siteConfig.social?.email ? `mailto:${siteConfig.social.email}` : undefined,
+                    ].filter(Boolean),
+                  }}
+                />
+
+                {/* 可选增强：站点主导航（有助于搜索引擎理解信息架构） */}
+                <JsonLd
+                  data={{
+                    '@context': 'https://schema.org',
+                    '@type': 'SiteNavigationElement',
+                    name: '主导航',
+                    url: siteConfig.url,
+                    about: undefined,
+                    hasPart: [
+                      { '@type': 'WebPage', name: '首页', url: siteConfig.url },
+                      { '@type': 'WebPage', name: '博客', url: `${siteConfig.url}/blog` },
+                      { '@type': 'WebPage', name: '项目', url: `${siteConfig.url}/projects` },
+                      { '@type': 'WebPage', name: '关于', url: `${siteConfig.url}/about` },
+                      { '@type': 'WebPage', name: '联系', url: `${siteConfig.url}/contact` },
+                      { '@type': 'WebPage', name: '订阅', url: `${siteConfig.url}/subscribe` },
+                      { '@type': 'WebPage', name: '搜索', url: `${siteConfig.url}/search` },
+                      { '@type': 'WebPage', name: 'Now', url: `${siteConfig.url}/now` },
+                      { '@type': 'WebPage', name: 'Uses', url: `${siteConfig.url}/uses` },
+                    ],
+                  }}
+                />
 
               </CommandProvider>
             </NextIntlClientProvider>
