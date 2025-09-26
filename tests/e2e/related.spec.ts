@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-const base = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000'
-
 test.describe('Related posts', () => {
   test('shows related list and navigates', async ({ page }) => {
-    await page.goto(`${base}/blog/writing-with-mdx-components`)
+  await page.goto('/blog/writing-with-mdx-components')
     // 相关推荐区域
     const section = page.getByRole('region', { name: '相关推荐' })
     // 如果没有显式的 role/aria-label，则改用标题定位

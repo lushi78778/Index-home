@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-const base = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000'
-
 test.describe('Mobile menu', () => {
   test('open and navigate', async ({ page, isMobile }) => {
-    await page.goto(base)
+  await page.goto('/')
     // 模拟小屏：强制 390x844
     await page.setViewportSize({ width: 390, height: 844 })
     const menuBtn = page.getByRole('button', { name: '打开菜单' })

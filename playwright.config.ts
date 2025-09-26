@@ -11,7 +11,7 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || (process.env.CI ? 'http://localhost:3000' : 'http://localhost:3001'),
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -30,8 +30,8 @@ export default defineConfig({
         timeout: 180_000,
       }
     : {
-        command: 'npm run dev -- -p 3000',
-        url: 'http://localhost:3000',
+        command: 'npm run dev -- -p 3001',
+        url: 'http://localhost:3001',
         reuseExistingServer: true,
         timeout: 120_000,
       },
