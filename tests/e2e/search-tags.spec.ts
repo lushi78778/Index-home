@@ -13,7 +13,13 @@ test('search returns results and navigates to first result', async ({ page }) =>
     href?.startsWith('/blog/') ? page.waitForURL(/\/blog\//) : page.waitForURL(/\/projects\//),
     first.click(),
   ])
-  await expect(page.locator('article, h1')).toBeVisible()
+  // prioritize article, fallback to single h1
+  const article = page.locator('article')
+  if (await article.count()) {
+    await expect(article.first()).toBeVisible()
+  } else {
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  }
 })
 
 test('tags index lists tags and tag page shows items', async ({ page }) => {
