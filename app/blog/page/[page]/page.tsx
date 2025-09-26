@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getAllPosts } from '@/lib/content'
 import { siteConfig } from '@/config/site'
+import { BLOG_PAGE_SIZE } from '@/config/constants'
 
 export const revalidate = 60 * 10
 
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: { params: { page: string } })
 
 export default function BlogPageByNumber({ params }: { params: { page: string } }) {
   const page = Math.max(1, Number(params.page || '1'))
-  const pageSize = 10
+  const pageSize = BLOG_PAGE_SIZE
   let posts = getAllPosts()
 
   const total = posts.length
@@ -25,6 +26,15 @@ export default function BlogPageByNumber({ params }: { params: { page: string } 
 
   return (
     <div className="space-y-6">
+      {/* rel prev/next for crawlers */}
+      <link
+        rel="prev"
+        href={current > 1 ? `${siteConfig.url}/blog/page/${current - 1}` : undefined}
+      />
+      <link
+        rel="next"
+        href={current < totalPages ? `${siteConfig.url}/blog/page/${current + 1}` : undefined}
+      />
       <h1 className="text-2xl font-bold">博客</h1>
       <div className="text-sm text-muted-foreground">共 {total} 篇文章</div>
       <ul className="space-y-4">

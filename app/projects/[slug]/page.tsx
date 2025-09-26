@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { getAllProjects } from '@/lib/content'
 import { siteConfig } from '@/config/site'
 import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import rehypeSlug from 'rehype-slug'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
@@ -46,6 +47,24 @@ export default function ProjectPage({ params }: { params: { slug: string } }) {
     <article className="prose dark:prose-invert max-w-none">
       <h1>{project.title}</h1>
       <p className="text-sm text-muted-foreground">{project.description}</p>
+      {/* meta line: role · date */}
+      <div className="mt-1 text-sm text-muted-foreground">
+        {project.role && <span>角色：{project.role} · </span>}
+        <span>{new Date(project.date).toLocaleDateString()}</span>
+      </div>
+      {/* actions */}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {project.links?.github && (
+          <a href={project.links.github} target="_blank" rel="noreferrer" className="no-underline">
+            <Badge variant="outline">GitHub</Badge>
+          </a>
+        )}
+        {project.links?.demo && (
+          <a href={project.links.demo} target="_blank" rel="noreferrer" className="no-underline">
+            <Badge variant="outline">Demo</Badge>
+          </a>
+        )}
+      </div>
       {(project.tech?.length || project.tags?.length) ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {project.tech?.map((t) => (
@@ -57,7 +76,7 @@ export default function ProjectPage({ params }: { params: { slug: string } }) {
         </div>
       ) : null}
 
-      {/* 项目正文（MDX 渲染） */}
+  {/* 项目正文（MDX 渲染） */}
       {project.content && (
         <MDXRemote
           source={project.content}
@@ -71,19 +90,36 @@ export default function ProjectPage({ params }: { params: { slug: string } }) {
         />
       )}
 
-      {/* 结构化数据：CreativeWork + BreadcrumbList */}
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'CreativeWork',
-          name: project.title,
-          description: project.description,
-          inLanguage: 'zh-CN',
-          url: `${siteConfig.url}/projects/${project.slug}`,
-          author: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
-          keywords: project.tags?.length ? project.tags.join(', ') : undefined,
-        }}
-      />
+      {/* 结构化数据：若存在 GitHub 仓库，则使用 SoftwareSourceCode，否则使用 CreativeWork */}
+      {project.links?.github ? (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareSourceCode',
+            name: project.title,
+            description: project.description,
+            codeRepository: project.links.github,
+            url: `${siteConfig.url}/projects/${project.slug}`,
+            programmingLanguage: project.tech?.length ? project.tech.join(', ') : undefined,
+            author: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
+            keywords: project.tags?.length ? project.tags.join(', ') : undefined,
+            license: undefined,
+          }}
+        />
+      ) : (
+        <JsonLd
+          data={{
+            '@context': 'https://schema.org',
+            '@type': 'CreativeWork',
+            name: project.title,
+            description: project.description,
+            inLanguage: 'zh-CN',
+            url: `${siteConfig.url}/projects/${project.slug}`,
+            author: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
+            keywords: project.tags?.length ? project.tags.join(', ') : undefined,
+          }}
+        />
+      )}
       <JsonLd
         data={{
           '@context': 'https://schema.org',
