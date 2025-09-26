@@ -115,7 +115,10 @@ function listWithMtime(dir: string): FileMark[] {
  * @returns 返回包含 `meta` (校验后的元数据) 和 `content` (Markdown 正文) 的对象。
  * @throws 如果 Zod 校验失败，则抛出错误。
  */
-function parseFile<T extends z.ZodTypeAny>(filePath: string, schema: T): { meta: z.infer<T>; content: string } {
+function parseFile<T extends z.ZodTypeAny>(
+  filePath: string,
+  schema: T,
+): { meta: z.infer<T>; content: string } {
   const rawContent = fs.readFileSync(filePath, 'utf8')
   const { data: frontmatter, content } = matter(rawContent)
   const slug = path.basename(filePath).replace(/\.(md|mdx)$/i, '')
@@ -160,7 +163,9 @@ function areFileMarksEqual(a: FileMark[], b: FileMark[]): boolean {
  * @param {boolean} [options.includeDraft=isDev] - 是否包含草稿。开发环境默认包含。
  * @returns {Post[]} - 按日期降序排列的文章数组。
  */
-export function getAllPosts({ includeDraft = process.env.NODE_ENV === 'development' } = {}): Post[] {
+export function getAllPosts({
+  includeDraft = process.env.NODE_ENV === 'development',
+} = {}): Post[] {
   const currentMarks = listWithMtime('posts')
 
   // 如果缓存不存在或文件已变更，则重新解析所有文章
@@ -229,12 +234,12 @@ export function getAllNotes(): Note[] {
 export function getAllTags() {
   const tagCount = new Map<string, number>()
 
-  getAllPosts({ includeDraft: false }).forEach(p => {
-    p.tags.forEach(t => tagCount.set(t, (tagCount.get(t) || 0) + 1))
+  getAllPosts({ includeDraft: false }).forEach((p) => {
+    p.tags.forEach((t) => tagCount.set(t, (tagCount.get(t) || 0) + 1))
   })
 
-  getAllProjects().forEach(pj => {
-    pj.tags.forEach(t => tagCount.set(t, (tagCount.get(t) || 0) + 1))
+  getAllProjects().forEach((pj) => {
+    pj.tags.forEach((t) => tagCount.set(t, (tagCount.get(t) || 0) + 1))
   })
 
   return Array.from(tagCount.entries())

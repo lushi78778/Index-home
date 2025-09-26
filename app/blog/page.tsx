@@ -52,7 +52,10 @@ export default function BlogIndex({
   if (tag) posts = posts.filter((p) => p.tags.includes(tag))
 
   // 关键词简易筛选（可替换为客户端索引或服务端搜索）
-  if (q) posts = posts.filter((p) => p.title.toLowerCase().includes(q) || p.excerpt?.toLowerCase().includes(q))
+  if (q)
+    posts = posts.filter(
+      (p) => p.title.toLowerCase().includes(q) || p.excerpt?.toLowerCase().includes(q),
+    )
 
   const total = posts.length
   const totalPages = Math.max(1, Math.ceil(total / pageSize))

@@ -7,7 +7,11 @@ import { JsonLd } from '@/components/site/json-ld'
 
 export const revalidate = 60 * 10
 
-export async function generateMetadata({ params }: { params: { page: string } }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { page: string }
+}): Promise<Metadata> {
   const n = Math.max(1, Number(params.page || '1'))
   const title = n > 1 ? `博客 - 第 ${n} 页` : '博客'
   const url = `${siteConfig.url}/blog/page/${n}`
@@ -59,7 +63,9 @@ export default function BlogPageByNumber({ params }: { params: { page: string } 
         >
           上一页
         </Link>
-        <div className="text-sm text-muted-foreground">第 {current} / {totalPages} 页</div>
+        <div className="text-sm text-muted-foreground">
+          第 {current} / {totalPages} 页
+        </div>
         <Link
           aria-disabled={current >= totalPages}
           href={(current >= totalPages ? '#' : `/blog/page/${current + 1}`) as any}
@@ -94,7 +100,14 @@ export default function BlogPageByNumber({ params }: { params: { page: string } 
             { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
             { '@type': 'ListItem', position: 2, name: '博客', item: `${siteConfig.url}/blog` },
             ...(current > 1
-              ? [{ '@type': 'ListItem', position: 3, name: `第 ${current} 页`, item: `${siteConfig.url}/blog/page/${current}` }]
+              ? [
+                  {
+                    '@type': 'ListItem',
+                    position: 3,
+                    name: `第 ${current} 页`,
+                    item: `${siteConfig.url}/blog/page/${current}`,
+                  },
+                ]
               : []),
           ],
         }}

@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import Link from 'next/link'
 import { siteConfig } from '@/config/site'
@@ -50,7 +50,11 @@ export function Header() {
         </Link>
         <nav className="hidden gap-4 md:flex">
           {nav.map((item) => (
-            <Link key={item.href} href={item.href as any} className="text-sm text-muted-foreground hover:text-foreground">
+            <Link
+              key={item.href}
+              href={item.href as any}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
               {item.label}
             </Link>
           ))}
@@ -58,7 +62,9 @@ export function Header() {
         <div className="hidden items-center gap-2 md:flex">
           {/* 命令面板入口 */}
           <Tooltip label="全局搜索 (Ctrl/⌘+K)">
-            <button onClick={open} className="h-8 rounded-md border px-2 text-sm hover:bg-accent">命令</button>
+            <button onClick={open} className="h-8 rounded-md border px-2 text-sm hover:bg-accent">
+              命令
+            </button>
           </Tooltip>
           {/* 顶部全局搜索框 */}
           <div className="flex items-center gap-2">
@@ -69,10 +75,18 @@ export function Header() {
               placeholder={t('search.placeholder')}
               className="h-8 w-56 rounded-md border bg-background px-2 text-sm"
             />
-            <button onClick={goSearch} className="h-8 rounded-md border px-2 text-sm hover:bg-accent">{t('nav.search')}</button>
+            <button
+              onClick={goSearch}
+              className="h-8 rounded-md border px-2 text-sm hover:bg-accent"
+            >
+              {t('nav.search')}
+            </button>
           </div>
           {/* 语言开关（zh/en） */}
-          <button onClick={toggleLocale} className="h-8 rounded-md border px-2 text-sm hover:bg-accent">
+          <button
+            onClick={toggleLocale}
+            className="h-8 rounded-md border px-2 text-sm hover:bg-accent"
+          >
             {locale === 'zh' ? '中文' : 'EN'}
           </button>
           <ThemeToggle />
@@ -103,18 +117,38 @@ export function Header() {
               className="h-9 w-full rounded-md border bg-background px-2 text-sm"
               aria-label="搜索"
             />
-            <button onClick={() => { setMobileOpen(false); goSearch() }} className="h-9 rounded-md border px-2 text-sm hover:bg-accent">{t('nav.search')}</button>
+            <button
+              onClick={() => {
+                setMobileOpen(false)
+                goSearch()
+              }}
+              className="h-9 rounded-md border px-2 text-sm hover:bg-accent"
+            >
+              {t('nav.search')}
+            </button>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {nav.map((item) => (
-              <Link key={item.href} href={item.href as any} className="rounded-md border px-3 py-2 text-sm hover:bg-accent" onClick={() => setMobileOpen(false)}>
+              <Link
+                key={item.href}
+                href={item.href as any}
+                className="rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                onClick={() => setMobileOpen(false)}
+              >
                 {item.label}
               </Link>
             ))}
           </div>
           <div className="flex items-center gap-2 pt-2">
-            <button onClick={open} className="h-9 rounded-md border px-2 text-sm hover:bg-accent">命令</button>
-            <button onClick={() => { toggleLocale(); }} className="h-9 rounded-md border px-2 text-sm hover:bg-accent">
+            <button onClick={open} className="h-9 rounded-md border px-2 text-sm hover:bg-accent">
+              命令
+            </button>
+            <button
+              onClick={() => {
+                toggleLocale()
+              }}
+              className="h-9 rounded-md border px-2 text-sm hover:bg-accent"
+            >
               {locale === 'zh' ? '切换到 EN' : '切换到 中文'}
             </button>
             <ThemeToggle />

@@ -1,11 +1,20 @@
-"use client"
+'use client'
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import MiniSearch from 'minisearch'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
-type Doc = { id: string; title: string; slug: string; type: 'post' | 'project'; excerpt?: string; snippet?: string; content?: string; tags?: string[] }
+type Doc = {
+  id: string
+  title: string
+  slug: string
+  type: 'post' | 'project'
+  excerpt?: string
+  snippet?: string
+  content?: string
+  tags?: string[]
+}
 
 type Ctx = {
   open: () => void
@@ -59,10 +68,13 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const { open, close } = useMemo<Ctx>(() => ({ open: () => setVisible(true), close: () => setVisible(false) }), [])
+  const { open, close } = useMemo<Ctx>(
+    () => ({ open: () => setVisible(true), close: () => setVisible(false) }),
+    [],
+  )
 
   const results = query
-    ? (mini.search(query).map((r) => r as any as Doc & { id: string }))
+    ? mini.search(query).map((r) => r as any as Doc & { id: string })
     : docs.slice(0, 10)
 
   // keyboard navigation for results
@@ -71,7 +83,7 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setActive((i) => Math.min((results.length ? results.length - 1 : 0), i + 1))
+        setActive((i) => Math.min(results.length ? results.length - 1 : 0, i + 1))
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
         setActive((i) => Math.max(0, i - 1))
@@ -144,7 +156,9 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
             aria-label="命令面板"
           >
             <div className="flex items-center gap-2 border-b px-2 py-1">
-              <kbd className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'}+K</kbd>
+              <kbd className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                {navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'}+K
+              </kbd>
               <input
                 autoFocus
                 value={query}
@@ -153,7 +167,9 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
                 className="h-10 w-full bg-transparent px-2 outline-none"
                 aria-label="搜索"
               />
-              <span className="text-xs text-muted-foreground hidden sm:inline">↑/↓ 选择 · Enter 跳转 · Esc 关闭</span>
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                ↑/↓ 选择 · Enter 跳转 · Esc 关闭
+              </span>
             </div>
             <ul className="max-h-80 overflow-auto p-1">
               {results.length === 0 ? (
@@ -168,7 +184,9 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
                     >
                       <div className="font-medium">{highlight(d.title) as any}</div>
                       {buildSnippet(d) && (
-                        <div className="text-xs text-muted-foreground line-clamp-2">{highlight(buildSnippet(d)!) as any}</div>
+                        <div className="text-xs text-muted-foreground line-clamp-2">
+                          {highlight(buildSnippet(d)!) as any}
+                        </div>
                       )}
                     </Link>
                   </li>

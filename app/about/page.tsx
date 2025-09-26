@@ -52,9 +52,16 @@ export default function AboutPage() {
       </div>
 
       <section className="prose dark:prose-invert">
-        <p>你好，我是 {siteConfig.author.name}。我喜欢构建快速、可维护、对用户与搜索引擎都友好的产品体验。</p>
         <p>
-          想要一份可打印的完整履历？前往 <a className="underline" href="/resume">/resume</a>。
+          你好，我是 {siteConfig.author.name}
+          。我喜欢构建快速、可维护、对用户与搜索引擎都友好的产品体验。
+        </p>
+        <p>
+          想要一份可打印的完整履历？前往{' '}
+          <a className="underline" href="/resume">
+            /resume
+          </a>
+          。
         </p>
       </section>
 
@@ -80,7 +87,12 @@ export default function AboutPage() {
               <div className="mb-2 font-medium">{g.name}</div>
               <div className="flex flex-wrap gap-2">
                 {g.items.map((i) => (
-                  <span key={i} className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground">{i}</span>
+                  <span
+                    key={i}
+                    className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
+                  >
+                    {i}
+                  </span>
                 ))}
               </div>
             </div>

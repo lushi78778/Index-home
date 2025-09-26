@@ -1,6 +1,14 @@
 import Link from 'next/link'
 
-export function LinkCard({ href, title, description }: { href: string; title: string; description?: string }) {
+export function LinkCard({
+  href,
+  title,
+  description,
+}: {
+  href: string
+  title: string
+  description?: string
+}) {
   const isExternal = /^https?:/i.test(href)
   const content = (
     <div className="rounded-lg border p-3 transition-colors hover:bg-accent">

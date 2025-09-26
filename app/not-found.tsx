@@ -7,8 +7,12 @@ export default function NotFound() {
       <h1 className="mt-2 text-2xl font-bold">页面未找到</h1>
       <p className="mt-2 text-sm text-muted-foreground">抱歉，你访问的页面不存在或已被移动。</p>
       <div className="mt-6 flex items-center justify-center gap-2">
-        <Link href="/" className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent">返回首页</Link>
-        <Link href="/search" className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent">去搜索</Link>
+        <Link href="/" className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent">
+          返回首页
+        </Link>
+        <Link href="/search" className="rounded-md border px-3 py-1.5 text-sm hover:bg-accent">
+          去搜索
+        </Link>
       </div>
     </div>
   )

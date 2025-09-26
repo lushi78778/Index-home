@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Related posts', () => {
   test('shows related list and navigates', async ({ page }) => {
-  await page.goto('/blog/writing-with-mdx-components')
+    await page.goto('/blog/writing-with-mdx-components')
     // 相关推荐区域
     const section = page.getByRole('region', { name: '相关推荐' })
     // 如果没有显式的 role/aria-label，则改用标题定位
@@ -14,7 +14,8 @@ test.describe('Related posts', () => {
     if (await firstLink.count()) {
       const href = await firstLink.getAttribute('href')
       await firstLink.click()
-      if (href) await expect(page).toHaveURL(new RegExp(href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+      if (href)
+        await expect(page).toHaveURL(new RegExp(href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
     }
   })
 })

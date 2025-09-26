@@ -13,13 +13,19 @@ module.exports = {
       settings: {
         preset: 'desktop',
         formFactor: 'desktop',
-        screenEmulation: { mobile: false, width: 1366, height: 768, deviceScaleFactor: 1, disabled: false },
+        screenEmulation: {
+          mobile: false,
+          width: 1366,
+          height: 768,
+          deviceScaleFactor: 1,
+          disabled: false,
+        },
       },
     },
     assert: {
       assertions: {
         'categories:performance': ['warn', { minScore: 0.8 }],
-  'categories:seo': ['error', { minScore: 0.95 }],
+        'categories:seo': ['error', { minScore: 0.95 }],
         'categories:accessibility': ['warn', { minScore: 0.9 }],
         'categories:best-practices': ['warn', { minScore: 0.9 }],
       },

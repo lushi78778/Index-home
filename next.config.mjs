@@ -73,7 +73,8 @@ const applyPlugins = (cfg) => {
       },
       // 3. 图标和 SVG：缓存优先，因为它们很少变动
       {
-        urlPattern: ({ url }) => url.pathname.startsWith('/icons/') || url.pathname.endsWith('.svg'),
+        urlPattern: ({ url }) =>
+          url.pathname.startsWith('/icons/') || url.pathname.endsWith('.svg'),
         handler: 'CacheFirst',
         options: {
           cacheName: 'icons-cache',

@@ -40,7 +40,8 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.shortName}`, // 页面标题模板
   },
   description: siteConfig.description,
-  openGraph: { // Open Graph (用于社交分享，如 Facebook, LinkedIn)
+  openGraph: {
+    // Open Graph (用于社交分享，如 Facebook, LinkedIn)
     title: siteConfig.name,
     description: siteConfig.description,
     url: siteConfig.url,
@@ -48,7 +49,8 @@ export const metadata: Metadata = {
     type: 'website',
     images: [`${siteConfig.url}/opengraph-image`],
   },
-  twitter: { // Twitter Cards (用于在 Twitter 上分享)
+  twitter: {
+    // Twitter Cards (用于在 Twitter 上分享)
     card: 'summary_large_image',
     title: siteConfig.name,
     description: siteConfig.description,
@@ -62,17 +64,14 @@ export const metadata: Metadata = {
 
 // 定义视口配置，用于控制页面在移动设备上的显示方式。
 export const viewport: Viewport = {
-  themeColor: [ // 根据系统颜色模式设置浏览器 UI 的主题色
+  themeColor: [
+    // 根据系统颜色模式设置浏览器 UI 的主题色
     { media: '(prefers-color-scheme: light)', color: 'white' },
     { media: '(prefers-color-scheme: dark)', color: 'black' },
   ],
 }
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // 在服务器端读取从中间件 (middleware.ts) 注入的请求头信息
   const hdrs = headers()
   // 获取 CSP (Content Security Policy) 的 nonce 值，用于内联脚本
@@ -93,7 +92,7 @@ export default async function RootLayout({
 
   return (
     // suppressHydrationWarning: 告诉 React 忽略 `<html>` 标签上因扩展程序等原因造成的属性不匹配警告
-  <html lang={locale} suppressHydrationWarning className={inter.className}>
+    <html lang={locale} suppressHydrationWarning className={inter.className}>
       <body>
         {/* 注入 Plausible 分析脚本。仅当环境变量中配置了 domain 时生效。 */}
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
@@ -176,7 +175,6 @@ export default async function RootLayout({
                     ],
                   }}
                 />
-
               </CommandProvider>
             </NextIntlClientProvider>
           </ToastProvider>

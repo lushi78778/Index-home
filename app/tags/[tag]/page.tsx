@@ -58,7 +58,18 @@ export default function TagPage({ params }: { params: { tag: string } }) {
           '@context': 'https://schema.org',
           '@type': 'ItemList',
           name: `标签：${params.tag}`,
-          itemListElement: [...posts.map((p) => ({ '@type': 'ListItem', name: p.title, url: `${siteConfig.url}/blog/${p.slug}` })), ...projects.map((p) => ({ '@type': 'ListItem', name: p.title, url: `${siteConfig.url}/projects/${p.slug}` }))].map((it, i) => ({ ...it, position: i + 1 })),
+          itemListElement: [
+            ...posts.map((p) => ({
+              '@type': 'ListItem',
+              name: p.title,
+              url: `${siteConfig.url}/blog/${p.slug}`,
+            })),
+            ...projects.map((p) => ({
+              '@type': 'ListItem',
+              name: p.title,
+              url: `${siteConfig.url}/projects/${p.slug}`,
+            })),
+          ].map((it, i) => ({ ...it, position: i + 1 })),
           numberOfItems: posts.length + projects.length,
         }}
       />
@@ -69,7 +80,12 @@ export default function TagPage({ params }: { params: { tag: string } }) {
           itemListElement: [
             { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
             { '@type': 'ListItem', position: 2, name: '标签', item: `${siteConfig.url}/tags` },
-            { '@type': 'ListItem', position: 3, name: params.tag, item: `${siteConfig.url}/tags/${encodeURIComponent(params.tag)}` },
+            {
+              '@type': 'ListItem',
+              position: 3,
+              name: params.tag,
+              item: `${siteConfig.url}/tags/${encodeURIComponent(params.tag)}`,
+            },
           ],
         }}
       />

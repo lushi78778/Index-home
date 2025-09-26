@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 
@@ -29,13 +29,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     delete timers.current[id]
   }, [])
 
-  const show = useCallback<ToastCtx['show']>((t) => {
-    const id = Math.random().toString(36).slice(2)
-    const duration = t.duration ?? (t.variant === 'destructive' ? 6000 : 3500)
-    setToasts((arr) => [...arr, { id, ...t, duration }])
-    timers.current[id] = setTimeout(() => dismiss(id), duration)
-    return id
-  }, [dismiss])
+  const show = useCallback<ToastCtx['show']>(
+    (t) => {
+      const id = Math.random().toString(36).slice(2)
+      const duration = t.duration ?? (t.variant === 'destructive' ? 6000 : 3500)
+      setToasts((arr) => [...arr, { id, ...t, duration }])
+      timers.current[id] = setTimeout(() => dismiss(id), duration)
+      return id
+    },
+    [dismiss],
+  )
 
   const value = useMemo(() => ({ toasts, show, dismiss }), [toasts, show, dismiss])
 
@@ -69,7 +72,9 @@ function ToastViewport({ toasts, onClose }: { toasts: Toast[]; onClose: (id: str
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               {t.title && <div className="font-medium leading-none">{t.title}</div>}
-              {t.description && <div className="mt-1 text-sm text-muted-foreground">{t.description}</div>}
+              {t.description && (
+                <div className="mt-1 text-sm text-muted-foreground">{t.description}</div>
+              )}
             </div>
             <button
               className="rounded p-1 text-sm text-muted-foreground hover:bg-accent"

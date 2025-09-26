@@ -7,7 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { JsonLd } from '@/components/site/json-ld'
 
-export async function generateMetadata({ searchParams }: { searchParams: { tag?: string; featured?: string } }): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: { tag?: string; featured?: string }
+}): Promise<Metadata> {
   const hasFilter = !!(searchParams?.tag?.trim() || searchParams?.featured === '1')
   return {
     title: '项目',
@@ -18,7 +22,11 @@ export async function generateMetadata({ searchParams }: { searchParams: { tag?:
 }
 
 // 项目列表：支持标签筛选（?tag=xxx）
-export default function ProjectsPage({ searchParams }: { searchParams: { tag?: string; featured?: string } }) {
+export default function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: { tag?: string; featured?: string }
+}) {
   const all = getAllProjects()
   const tag = searchParams.tag?.trim()
   const onlyFeatured = searchParams.featured === '1'
@@ -49,8 +57,18 @@ export default function ProjectsPage({ searchParams }: { searchParams: { tag?: s
       {/* 标签筛选器 */}
       {tagList.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/projects" className={`rounded border px-2 py-1 text-sm ${!tag && !onlyFeatured ? 'bg-accent' : ''}`}>全部</Link>
-          <Link href="/projects?featured=1" className={`rounded border px-2 py-1 text-sm ${onlyFeatured ? 'bg-accent' : ''}`}>精选</Link>
+          <Link
+            href="/projects"
+            className={`rounded border px-2 py-1 text-sm ${!tag && !onlyFeatured ? 'bg-accent' : ''}`}
+          >
+            全部
+          </Link>
+          <Link
+            href="/projects?featured=1"
+            className={`rounded border px-2 py-1 text-sm ${onlyFeatured ? 'bg-accent' : ''}`}
+          >
+            精选
+          </Link>
           {tagList.map(({ t, c }) => (
             <Link
               key={t}
@@ -69,17 +87,23 @@ export default function ProjectsPage({ searchParams }: { searchParams: { tag?: s
             <Card>
               <CardHeader>
                 <CardTitle>
-                  <Link className="underline" href={`/projects/${p.slug}`}>{p.title}</Link>
+                  <Link className="underline" href={`/projects/${p.slug}`}>
+                    {p.title}
+                  </Link>
                 </CardTitle>
                 <CardDescription>{p.description}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {p.tech?.slice(0, 6).map((t) => (
-                    <Badge key={t} variant="outline">{t}</Badge>
+                    <Badge key={t} variant="outline">
+                      {t}
+                    </Badge>
                   ))}
                   {p.tags?.slice(0, 6).map((t) => (
-                    <Badge key={t} variant="secondary">#{t}</Badge>
+                    <Badge key={t} variant="secondary">
+                      #{t}
+                    </Badge>
                   ))}
                 </div>
               </CardContent>
@@ -117,4 +141,3 @@ export default function ProjectsPage({ searchParams }: { searchParams: { tag?: s
     </div>
   )
 }
-

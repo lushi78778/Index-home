@@ -15,7 +15,10 @@ test('projects page tag filter works', async ({ page }) => {
 test('notes page filters (kind/tag) work', async ({ page }) => {
   await page.goto('/notes')
   // 点击“书签”过滤
-  await Promise.all([page.waitForURL(/\/notes\?kind=bookmark/), page.getByRole('link', { name: '书签' }).click()])
+  await Promise.all([
+    page.waitForURL(/\/notes\?kind=bookmark/),
+    page.getByRole('link', { name: '书签' }).click(),
+  ])
   // 若存在条目，至少出现一个 li
   const item = page.locator('ul li').first()
   await expect(item).toBeVisible()

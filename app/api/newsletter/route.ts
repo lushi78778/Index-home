@@ -23,7 +23,10 @@ export async function POST(req: Request) {
       const headers: Record<string, string> = { 'Retry-After': String(retryAfter) }
       if (typeof limit === 'number') headers['X-RateLimit-Limit'] = String(limit)
       if (typeof remaining === 'number') headers['X-RateLimit-Remaining'] = String(remaining)
-      return NextResponse.json({ ok: false, error: 'rate_limited', reset }, { status: 429, headers })
+      return NextResponse.json(
+        { ok: false, error: 'rate_limited', reset },
+        { status: 429, headers },
+      )
     }
   }
   const bdToken = process.env.BUTTONDOWN_API_TOKEN
@@ -48,8 +51,8 @@ export async function POST(req: Request) {
       globalThis.crypto.getRandomValues(u8)
       const token = Buffer.from(u8).toString('base64url')
       await redis.set(`newsletter:confirm:${token}`, parsed.data.email, { ex: 60 * 60 * 24 })
-  // 改为跳转用户可见页面，由页面再调用 API 完成确认
-  const confirmUrl = `${siteUrl}/subscribe/confirm?token=${encodeURIComponent(token)}`
+      // 改为跳转用户可见页面，由页面再调用 API 完成确认
+      const confirmUrl = `${siteUrl}/subscribe/confirm?token=${encodeURIComponent(token)}`
       try {
         const { Resend } = await import('resend').catch(() => ({ Resend: null as any }))
         if (!Resend) return NextResponse.json({ ok: true })

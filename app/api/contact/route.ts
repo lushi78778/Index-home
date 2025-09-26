@@ -39,7 +39,10 @@ export async function POST(req: Request) {
       const headers: Record<string, string> = { 'Retry-After': String(retryAfter) }
       if (typeof limit === 'number') headers['X-RateLimit-Limit'] = String(limit)
       if (typeof remaining === 'number') headers['X-RateLimit-Remaining'] = String(remaining)
-      return NextResponse.json({ ok: false, error: 'rate_limited', reset }, { status: 429, headers })
+      return NextResponse.json(
+        { ok: false, error: 'rate_limited', reset },
+        { status: 429, headers },
+      )
     }
   }
 
@@ -65,8 +68,11 @@ export async function POST(req: Request) {
     }
     const resend = new Resend(apiKey)
     // 发件人：优先使用 NEWSLETTER_FROM，否则使用 shortName + noreply@域名
-    const defaultFromDomain = process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname : 'example.com'
-    const fromDisplay = process.env.NEWSLETTER_FROM || `Website Contact <noreply@${defaultFromDomain}>`
+    const defaultFromDomain = process.env.NEXT_PUBLIC_SITE_URL
+      ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname
+      : 'example.com'
+    const fromDisplay =
+      process.env.NEWSLETTER_FROM || `Website Contact <noreply@${defaultFromDomain}>`
     await resend.emails.send({
       from: fromDisplay,
       to,

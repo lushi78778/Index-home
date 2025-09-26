@@ -3,13 +3,21 @@ import { test, expect } from '@playwright/test'
 // Mock helper: intercept API calls
 async function mockNewsletterSuccess(page: import('@playwright/test').Page) {
   await page.route('**/api/newsletter', async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    })
   })
 }
 
 async function mockContactSuccess(page: import('@playwright/test').Page) {
   await page.route('**/api/contact', async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    })
   })
 }
 

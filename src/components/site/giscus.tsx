@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
 
@@ -22,8 +22,8 @@ export function GiscusComments() {
         s.src = 'https://giscus.app/client.js'
         s.async = true
         s.crossOrigin = 'anonymous'
-  // 使用自定义主题路由：基于官方 preferred_color_scheme 扩展宽度
-  const themeUrl = `${location.origin}/giscus-theme.css?v=3`
+        // 使用自定义主题路由：基于官方 preferred_color_scheme 扩展宽度
+        const themeUrl = `${location.origin}/giscus-theme.css?v=3`
         s.setAttribute('data-repo', repo!)
         s.setAttribute('data-repo-id', repoId!)
         s.setAttribute('data-category', category!)
@@ -47,7 +47,7 @@ export function GiscusComments() {
   // 确保在 HMR 或首次加载后，iframe 内主题更新为我们的自定义 CSS（从而应用宽度覆盖）
   useEffect(() => {
     if (!enabled || !divRef.current) return
-  const themeUrl = `${location.origin}/giscus-theme.css?v=3`
+    const themeUrl = `${location.origin}/giscus-theme.css?v=3`
 
     let tried = 0
     const maxTries = 8
@@ -57,7 +57,7 @@ export function GiscusComments() {
       if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage(
           { giscus: { setConfig: { theme: themeUrl } } },
-          'https://giscus.app'
+          'https://giscus.app',
         )
         clearInterval(timer)
       } else if (tried >= maxTries) {

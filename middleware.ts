@@ -46,7 +46,11 @@ export function middleware(req: NextRequest) {
       const rest = match[2] || '/'
       const url = new URL(rest, req.url)
       const redirect = NextResponse.redirect(url, 308)
-      redirect.cookies.set('NEXT_LOCALE', maybeLocale, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' })
+      redirect.cookies.set('NEXT_LOCALE', maybeLocale, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365,
+        sameSite: 'lax',
+      })
       // 同时向下游传递 locale 信息（尽管这次请求会被重定向）
       redirect.headers.set('x-locale', maybeLocale)
       return redirect
@@ -63,7 +67,7 @@ export function middleware(req: NextRequest) {
 
   // 2. 接下来，为响应添加安全头。
   // 使用 Web Crypto API 生成一个安全的、一次性的 nonce 值。
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
 
   // 定义内容安全策略 (CSP) 的指令。
   // 这是一个白名单机制，只允许从指定的来源加载资源。
@@ -76,26 +80,26 @@ export function middleware(req: NextRequest) {
     "style-src 'self' 'unsafe-inline'", // 样式来源：允许同源和内联样式。
     "img-src 'self' data: https:", // 图片来源：允许同源、data URI 和所有 https 来源。
     "font-src 'self' data:", // 字体来源：允许同源和 data URI。
-  "connect-src 'self' https://plausible.io https://giscus.app", // 允许同源、Plausible 与 giscus。
+    "connect-src 'self' https://plausible.io https://giscus.app", // 允许同源、Plausible 与 giscus。
     "frame-src 'self' https://giscus.app", // Iframe 来源：允许嵌入 Giscus 评论。
     "frame-ancestors 'none'", // 禁止页面被嵌入到其他网站的 iframe 中。
     "form-action 'self'", // 表单提交目标：只允许提交到同源。
     "base-uri 'self'", // 限制 `<base>` 标签的 URL。
     "object-src 'none'", // 禁止使用 `<object>`, `<embed>`, `<applet>` 标签。
-    "upgrade-insecure-requests", // 自动将 http 请求升级为 https。
-  ];
+    'upgrade-insecure-requests', // 自动将 http 请求升级为 https。
+  ]
 
-  const csp = cspDirectives.join('; ');
+  const csp = cspDirectives.join('; ')
 
   // 将安全头设置到响应对象上。
-  res.headers.set('x-nonce', nonce); // 将 nonce 传递给下游组件（如 app/layout.tsx）。
-  res.headers.set('Content-Security-Policy', csp);
-  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.headers.set('X-Content-Type-Options', 'nosniff');
-  res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-  res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  res.headers.set('x-nonce', nonce) // 将 nonce 传递给下游组件（如 app/layout.tsx）。
+  res.headers.set('Content-Security-Policy', csp)
+  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.headers.set('X-Content-Type-Options', 'nosniff')
+  res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+  res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
 
-  return res;
+  return res
 }
 
 // 配置中间件的匹配器 (Matcher)。

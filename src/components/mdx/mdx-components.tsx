@@ -65,7 +65,10 @@ export const mdxComponents = {
   },
   table: (props: React.HTMLAttributes<HTMLTableElement>) => (
     <div className="my-4 w-full overflow-x-auto">
-      <table {...props} className="w-full text-left text-sm [&_th]:border-b [&_td]:border-b [&_th]:py-2 [&_td]:py-2" />
+      <table
+        {...props}
+        className="w-full text-left text-sm [&_th]:border-b [&_td]:border-b [&_th]:py-2 [&_td]:py-2"
+      />
     </div>
   ),
 }

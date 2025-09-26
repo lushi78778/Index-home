@@ -81,14 +81,17 @@
 
 /* 打印样式优化：隐藏导航与交互控件，最大化内容区域 */
 @media print {
-  header, footer, nav, .no-print {
+  header,
+  footer,
+  nav,
+  .no-print {
     display: none !important;
   }
   main {
     padding: 0 !important;
   }
   a[href]:after {
-    content: " (" attr(href) ")";
+    content: ' (' attr(href) ')';
     font-size: 0.85em;
   }
 }

@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -24,7 +24,11 @@ export default function SubscribePage() {
     } else if (res.status === 429) {
       const retryAfter = Number(res.headers.get('Retry-After') || '0')
       const seconds = isNaN(retryAfter) ? 60 : Math.max(1, retryAfter)
-      show({ title: '请求过于频繁', description: `请在 ${seconds} 秒后重试。`, variant: 'destructive' })
+      show({
+        title: '请求过于频繁',
+        description: `请在 ${seconds} 秒后重试。`,
+        variant: 'destructive',
+      })
     } else {
       show({ title: '订阅失败', description: '服务暂不可用，请稍后再试。', variant: 'destructive' })
     }
@@ -32,7 +36,9 @@ export default function SubscribePage() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-sm space-y-3">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium">邮箱</label>
+        <label htmlFor="email" className="block text-sm font-medium">
+          邮箱
+        </label>
         <input
           id="email"
           type="email"

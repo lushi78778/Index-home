@@ -74,17 +74,22 @@ function main() {
 
   // 轻量校验与提示（不阻断构建）
   const warn = []
-  if (!merged.REVALIDATE_SECRET || merged.REVALIDATE_SECRET === 'dev-secret') warn.push('REVALIDATE_SECRET 未设置为生产安全值')
+  if (!merged.REVALIDATE_SECRET || merged.REVALIDATE_SECRET === 'dev-secret')
+    warn.push('REVALIDATE_SECRET 未设置为生产安全值')
   // 如果存在相应路由/功能但密钥为空，给出提醒
   if (fs.existsSync(path.join(root, 'app', 'api', 'contact'))) {
     if (!merged.RESEND_API_KEY) warn.push('RESEND_API_KEY 为空，联系表单邮件可能无法发送')
     if (!merged.CONTACT_TO_EMAIL) warn.push('CONTACT_TO_EMAIL 为空，联系表单收件人未配置')
   }
   if (fs.existsSync(path.join(root, 'app', 'api', 'newsletter'))) {
-    if (!merged.BUTTONDOWN_API_TOKEN) warn.push('BUTTONDOWN_API_TOKEN 为空，订阅/双重确认可能无法工作')
+    if (!merged.BUTTONDOWN_API_TOKEN)
+      warn.push('BUTTONDOWN_API_TOKEN 为空，订阅/双重确认可能无法工作')
     if (!merged.NEWSLETTER_FROM) warn.push('NEWSLETTER_FROM 为空，订阅邮件发件人未配置')
   }
-  if ((merged.UPSTASH_REDIS_REST_URL && !merged.UPSTASH_REDIS_REST_TOKEN) || (!merged.UPSTASH_REDIS_REST_URL && merged.UPSTASH_REDIS_REST_TOKEN)) {
+  if (
+    (merged.UPSTASH_REDIS_REST_URL && !merged.UPSTASH_REDIS_REST_TOKEN) ||
+    (!merged.UPSTASH_REDIS_REST_URL && merged.UPSTASH_REDIS_REST_TOKEN)
+  ) {
     warn.push('Upstash Redis 配置不完整（URL/TOKEN 需同时配置）')
   }
   if (warn.length) {

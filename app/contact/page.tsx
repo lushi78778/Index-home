@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -43,7 +43,11 @@ export default function ContactPage() {
       if (res.status === 429) {
         const retryAfter = Number(res.headers.get('Retry-After') || '0')
         const seconds = isNaN(retryAfter) ? 60 : Math.max(1, retryAfter)
-        show({ title: '请求过于频繁', description: `请在 ${seconds} 秒后重试。`, variant: 'destructive' })
+        show({
+          title: '请求过于频繁',
+          description: `请在 ${seconds} 秒后重试。`,
+          variant: 'destructive',
+        })
       } else {
         show({ title: '发送失败', description: '请稍后重试。', variant: 'destructive' })
       }
@@ -61,24 +65,48 @@ export default function ContactPage() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg space-y-4">
       <div>
-  <label htmlFor="name" className="block text-sm font-medium">姓名</label>
-  <input id="name" className="mt-1 w-full rounded-md border px-3 py-2" {...register('name')} />
+        <label htmlFor="name" className="block text-sm font-medium">
+          姓名
+        </label>
+        <input
+          id="name"
+          className="mt-1 w-full rounded-md border px-3 py-2"
+          {...register('name')}
+        />
         {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
       <div>
-  <label htmlFor="email" className="block text-sm font-medium">邮箱</label>
-  <input id="email" className="mt-1 w-full rounded-md border px-3 py-2" {...register('email')} />
+        <label htmlFor="email" className="block text-sm font-medium">
+          邮箱
+        </label>
+        <input
+          id="email"
+          className="mt-1 w-full rounded-md border px-3 py-2"
+          {...register('email')}
+        />
         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
       </div>
       <div>
-  <label htmlFor="message" className="block text-sm font-medium">消息</label>
-  <textarea id="message" className="mt-1 w-full rounded-md border px-3 py-2" rows={5} {...register('message')} />
-        {errors.message && (
-          <p className="text-sm text-destructive">{errors.message.message}</p>
-        )}
+        <label htmlFor="message" className="block text-sm font-medium">
+          消息
+        </label>
+        <textarea
+          id="message"
+          className="mt-1 w-full rounded-md border px-3 py-2"
+          rows={5}
+          {...register('message')}
+        />
+        {errors.message && <p className="text-sm text-destructive">{errors.message.message}</p>}
       </div>
       {/* 蜜罐字段：隐藏输入，若被机器人填写则拒绝 */}
-  <input id="website" type="text" className="hidden" tabIndex={-1} autoComplete="off" {...register('website')} />
+      <input
+        id="website"
+        type="text"
+        className="hidden"
+        tabIndex={-1}
+        autoComplete="off"
+        {...register('website')}
+      />
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? '发送中…' : '发送'}
       </Button>

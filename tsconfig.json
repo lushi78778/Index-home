@@ -84,13 +84,7 @@
   // "next-env.d.ts": Next.js 自动生成的环境类型定义。
   // "**/*.ts", "**/*.tsx", "**/*.mdx": 包含项目下所有的 TypeScript 和 MDX 文件。
   // ".next/types/**/*.ts": 包含 Next.js 在构建过程中生成的类型文件，如类型化的路由。
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.mdx",
-    ".next/types/**/*.ts"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mdx", ".next/types/**/*.ts"],
 
   // "exclude": [...]：指定需要从编译中排除的文件和目录。
   // "node_modules": 排除所有第三方依赖，避免不必要的检查和编译。

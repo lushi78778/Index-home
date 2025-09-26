@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
 
@@ -23,9 +23,13 @@ export function Tooltip({ label, children }: { label: string; children: React.Re
     >
       {children}
       {open && (
-        <div role="tooltip" className="absolute left-1/2 top-full z-50 -translate-x-1/2 translate-y-2 rounded bg-foreground px-2 py-1 text-xs text-background shadow">
+        <div
+          role="tooltip"
+          className="absolute left-1/2 top-full z-50 -translate-x-1/2 translate-y-2 rounded bg-foreground px-2 py-1 text-xs text-background shadow"
+        >
           {label}
         </div>
       )}
     </div>
-  )}
+  )
+}

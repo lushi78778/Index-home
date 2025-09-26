@@ -25,7 +25,9 @@ export async function GET(_: Request, { params }: { params: { slug: string } }) 
         }}
       >
         <div style={{ fontSize: 60, fontWeight: 800, lineHeight: 1.2 }}>{title}</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 28, opacity: 0.9 }}>
+        <div
+          style={{ display: 'flex', justifyContent: 'space-between', fontSize: 28, opacity: 0.9 }}
+        >
           <span>{siteConfig.shortName}</span>
           <span>{subtitle}</span>
         </div>

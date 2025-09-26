@@ -16,7 +16,9 @@ describe('search-index api', async () => {
     const res1 = await getIndex(new Request('http://localhost/api/search-index'))
     const etag = res1.headers.get('ETag')
     expect(etag).toBeTruthy()
-    const res2 = await getIndex(new Request('http://localhost/api/search-index', { headers: { 'If-None-Match': etag! } }))
+    const res2 = await getIndex(
+      new Request('http://localhost/api/search-index', { headers: { 'If-None-Match': etag! } }),
+    )
     expect(res2.status).toBe(304)
   })
 })

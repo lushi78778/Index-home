@@ -36,10 +36,7 @@ export async function generateMetadata({
   const url = `${siteConfig.url}/blog/${post.slug}`
   const title = post.title
   const description = post.excerpt || siteConfig.description
-  const image =
-    post.ogImage ||
-    post.cover ||
-    `${siteConfig.url}/blog/${post.slug}/opengraph-image`
+  const image = post.ogImage || post.cover || `${siteConfig.url}/blog/${post.slug}/opengraph-image`
 
   return {
     title,
@@ -108,9 +105,7 @@ export default function PostPage({ params }: { params: { slug: string } }) {
         .filter((p) => p.series === post.series)
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     : []
-  const seriesIndex = post.series
-    ? seriesPosts.findIndex((p) => p.slug === post.slug)
-    : -1
+  const seriesIndex = post.series ? seriesPosts.findIndex((p) => p.slug === post.slug) : -1
 
   // 简易相关推荐：按标签交集评分，排除当前文章，取前 4 条
   // 若没有任何标签命中，则优先回退到同系列文章；再不行，回退到最新文章
@@ -138,7 +133,9 @@ export default function PostPage({ params }: { params: { slug: string } }) {
           <ul className="space-y-1">
             {toc.map((it) => (
               <li key={it.id} className={it.level === 3 ? 'pl-4' : ''}>
-                <a className="underline" href={`#${it.id}`}>{it.text}</a>
+                <a className="underline" href={`#${it.id}`}>
+                  {it.text}
+                </a>
               </li>
             ))}
           </ul>
@@ -168,7 +165,9 @@ export default function PostPage({ params }: { params: { slug: string } }) {
         <section className="mt-6 rounded-md border p-4">
           <div className="mb-2 flex items-center justify-between text-sm">
             <div className="font-medium">系列：{post.series}</div>
-            <div className="text-muted-foreground">{seriesIndex + 1} / {seriesPosts.length}</div>
+            <div className="text-muted-foreground">
+              {seriesIndex + 1} / {seriesPosts.length}
+            </div>
           </div>
           <ol className="list-decimal pl-5 text-sm">
             {seriesPosts.map((sp) => (
@@ -176,7 +175,9 @@ export default function PostPage({ params }: { params: { slug: string } }) {
                 {sp.slug === post.slug ? (
                   <span className="font-medium">{sp.title}</span>
                 ) : (
-                  <Link className="underline" href={`/blog/${sp.slug}` as any}>{sp.title}</Link>
+                  <Link className="underline" href={`/blog/${sp.slug}` as any}>
+                    {sp.title}
+                  </Link>
                 )}
               </li>
             ))}
@@ -214,13 +215,14 @@ export default function PostPage({ params }: { params: { slug: string } }) {
           <ul className="list-disc pl-5 text-sm">
             {related.map((rp) => (
               <li key={rp.slug}>
-                <Link className="underline" href={`/blog/${rp.slug}` as any}>{rp.title}</Link>
+                <Link className="underline" href={`/blog/${rp.slug}` as any}>
+                  {rp.title}
+                </Link>
               </li>
             ))}
           </ul>
         </section>
       )}
-
 
       {/* 结构化数据：BlogPosting + （可选）CreativeWorkSeries + BreadcrumbList + Person */}
       <JsonLd
@@ -234,7 +236,11 @@ export default function PostPage({ params }: { params: { slug: string } }) {
           inLanguage: post.lang,
           mainEntityOfPage: pageUrl,
           author: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
-          publisher: { '@type': 'Person', name: siteConfig.author.name, url: siteConfig.author.url },
+          publisher: {
+            '@type': 'Person',
+            name: siteConfig.author.name,
+            url: siteConfig.author.url,
+          },
           image: post.ogImage || post.cover ? [post.ogImage || (post.cover as string)] : undefined,
           keywords: post.tags && post.tags.length ? post.tags.join(', ') : undefined,
           isPartOf: post.series

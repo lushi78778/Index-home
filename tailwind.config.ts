@@ -13,16 +13,12 @@ import typography from '@tailwindcss/typography'
 const config: Config = {
   // 启用深色模式，策略为 'class'
   // 这意味着当 <html> 标签包含 'dark' 类时，深色模式的样式将生效
-  darkMode: ["class"],
+  darkMode: ['class'],
 
   // 配置 Tailwind CSS 需要扫描以查找工具类（utility classes）的文件路径
   // 包含了 src、app 目录下的所有 ts/tsx 文件，以及 content 目录下的 md/mdx 文件
   // 确保所有使用到 Tailwind 类的地方都被正确处理
-  content: [
-    "./src/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./content/**/*.{md,mdx}",
-  ],
+  content: ['./src/**/*.{ts,tsx}', './app/**/*.{ts,tsx}', './content/**/*.{md,mdx}'],
 
   // 自定义和扩展 Tailwind 的默认主题
   theme: {
@@ -31,61 +27,61 @@ const config: Config = {
       // 这种方法使得主题切换变得简单，只需在全局 CSS 中更改变量值即可
       // 变量定义在 `src/styles/globals.css` 中
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
       },
 
       // 自定义圆角大小，同样使用 CSS 变量
       // 这允许全局统一调整组件的圆角风格
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
 
       // 定义自定义的 keyframes 动画，用于 shadcn/ui 的 Accordion (手风琴) 组件
       keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
       },
 
       // 将上面定义的 keyframes 应用为可用的 animation 工具类
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
       },
     },
   },

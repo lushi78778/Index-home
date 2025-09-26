@@ -52,8 +52,8 @@ export default getRequestConfig(async () => {
       // 在某些环境拿不到 next/headers 时，忽略错误并走下面的回退
     }
 
-  // 4) 若 requestLocale() 有返回且合法，则使用
-  if (hinted && locales.includes(hinted as any)) return hinted
+    // 4) 若 requestLocale() 有返回且合法，则使用
+    if (hinted && locales.includes(hinted as any)) return hinted
 
     // 5) 最后回退到默认语言
     return defaultLocale

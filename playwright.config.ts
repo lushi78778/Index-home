@@ -11,16 +11,16 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || (process.env.CI ? 'http://localhost:3000' : 'http://localhost:3001'),
+    baseURL:
+      process.env.PLAYWRIGHT_BASE_URL ||
+      (process.env.CI ? 'http://localhost:3000' : 'http://localhost:3001'),
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     extraHTTPHeaders: { 'Accept-Language': 'zh-CN,zh;q=0.9' },
     viewport: { width: 1280, height: 800 },
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   // 自动启动 Next.js 服务器：CI 使用 build+start，本地使用 dev
   webServer: process.env.CI
     ? {

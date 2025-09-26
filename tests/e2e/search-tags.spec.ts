@@ -26,10 +26,7 @@ test('tags index lists tags and tag page shows items', async ({ page }) => {
   await page.goto('/tags')
   const tagLink = page.locator('a[href^="/tags/"]').first()
   await expect(tagLink).toBeVisible()
-  await Promise.all([
-    page.waitForURL(/\/tags\//),
-    tagLink.click(),
-  ])
+  await Promise.all([page.waitForURL(/\/tags\//), tagLink.click()])
   // Tag page should show section headings and at least one list
   await expect(page.getByRole('heading', { name: /文章/ })).toBeVisible()
   // presence of either posts or projects list items

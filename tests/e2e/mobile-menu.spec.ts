@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Mobile menu', () => {
   test('open and navigate', async ({ page, isMobile }) => {
-  await page.goto('/')
+    await page.goto('/')
     // 模拟小屏：强制 390x844
     await page.setViewportSize({ width: 390, height: 844 })
     const menuBtn = page.getByRole('button', { name: '打开菜单' })

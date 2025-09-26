@@ -8,11 +8,11 @@ import { GET as getSitemap } from '@/app/sitemap.xml/route'
 describe('sitemap pagination', async () => {
   it('should include blog root and limited pagination starting from page 2', async () => {
     const res = await getSitemap()
-    const xml = await (res as any).text?.() ?? ''
+    const xml = (await (res as any).text?.()) ?? ''
     expect(xml).toContain('/blog')
-  const match: string[] = xml.match(/\/blog\/page\/(\d+)/g) || []
+    const match: string[] = xml.match(/\/blog\/page\/(\d+)/g) || []
     // 所有分页页码应 >= 2
-  const pages = match.map((m: string) => Number(m.split('/').pop()))
-  expect(pages.every((n: number) => n >= 2)).toBe(true)
+    const pages = match.map((m: string) => Number(m.split('/').pop()))
+    expect(pages.every((n: number) => n >= 2)).toBe(true)
   })
 })

@@ -6,13 +6,13 @@ describe('content loaders', () => {
     const posts = getAllPosts({ includeDraft: true })
     expect(Array.isArray(posts)).toBe(true)
     // demo file exists
-    expect(posts.some(p => p.slug === 'hello-world')).toBe(true)
+    expect(posts.some((p) => p.slug === 'hello-world')).toBe(true)
   })
 
   it('should load demo projects', () => {
     const projects = getAllProjects()
     expect(Array.isArray(projects)).toBe(true)
-    expect(projects.some(p => p.slug === 'demo-project')).toBe(true)
+    expect(projects.some((p) => p.slug === 'demo-project')).toBe(true)
   })
 
   it('should exclude draft and future posts in prod mode', () => {
@@ -20,8 +20,8 @@ describe('content loaders', () => {
     const now = Date.now()
     const posts = getAllPosts({ includeDraft: false })
     // none should be future-dated
-    expect(posts.every(p => new Date(p.date).getTime() <= now)).toBe(true)
+    expect(posts.every((p) => new Date(p.date).getTime() <= now)).toBe(true)
     // and none with draft: true
-    expect(posts.every(p => !p.draft)).toBe(true)
+    expect(posts.every((p) => !p.draft)).toBe(true)
   })
 })

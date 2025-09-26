@@ -1,11 +1,20 @@
-"use client"
+'use client'
 
 import MiniSearch from 'minisearch'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-type Doc = { id: string; title: string; slug: string; type: 'post' | 'project'; excerpt?: string; snippet?: string; content?: string; tags?: string[] }
+type Doc = {
+  id: string
+  title: string
+  slug: string
+  type: 'post' | 'project'
+  excerpt?: string
+  snippet?: string
+  content?: string
+  tags?: string[]
+}
 
 export function SearchClient() {
   const sp = useSearchParams()
@@ -44,7 +53,7 @@ export function SearchClient() {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setActive((i) => Math.min((results.length ? results.length - 1 : 0), i + 1))
+        setActive((i) => Math.min(results.length ? results.length - 1 : 0, i + 1))
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
         setActive((i) => Math.max(0, i - 1))
@@ -68,7 +77,9 @@ export function SearchClient() {
         <>
           {text.split(re).map((part, i) =>
             re.test(part) ? (
-              <mark key={i} className="bg-yellow-200 dark:bg-yellow-700 text-foreground">{part}</mark>
+              <mark key={i} className="bg-yellow-200 dark:bg-yellow-700 text-foreground">
+                {part}
+              </mark>
             ) : (
               <span key={i}>{part}</span>
             ),

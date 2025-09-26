@@ -1,8 +1,16 @@
-"use client"
+'use client'
 
 import React from 'react'
 
-export function Dialog({ open, onOpenChange, children }: { open: boolean; onOpenChange: (v: boolean) => void; children: React.ReactNode }) {
+export function Dialog({
+  open,
+  onOpenChange,
+  children,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  children: React.ReactNode
+}) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
