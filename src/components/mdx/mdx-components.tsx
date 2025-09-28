@@ -43,6 +43,8 @@ export const mdxComponents = {
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote {...props} className="border-l-4 pl-4 italic text-muted-foreground" />
   ),
+  // 说明：为了兼容老内容或不方便标注尺寸的图片，当 width/height 缺失时允许回退到原生 <img>
+  // 我们优先使用 next/image；下方在必要处显式关闭相关 ESLint 规则。
   img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
     // 优先使用 next/image；若未提供宽高，回退到原生 img
     if (props.width && props.height) {
