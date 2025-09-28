@@ -1,0 +1,79 @@
+# 示例配置：请将本文件复制为 config.yaml 并按需修改
+#
+# 注意：本示例已移除所有敏感密钥（API Token、访问密钥等）。
+# - 以 NEXT_PUBLIC_ 开头的变量会暴露到前端，切勿写入机密信息。
+# - 其余变量仅在服务端使用，请在本地/服务器的 config.yaml 中安全配置。
+
+site:
+  name: 'Your Site Name'
+  shortName: 'yoursite'
+  description: 'A modern, content-driven personal site powered by Next.js.'
+  url: 'https://example.com'
+
+  author:
+    name: 'Your Name'
+    url: 'https://example.com/about'
+
+  social:
+    github: 'https://github.com/yourname'
+    twitter: ''
+    email: 'you@example.com'
+
+  locales: ['zh', 'en']
+  defaultLocale: 'zh'
+
+  quickLinks:
+    - title: 'Search'
+      description: 'Jump into the global search panel'
+      url: '/search'
+    - title: 'GitHub'
+      description: 'Link to your GitHub profile'
+      url: 'https://github.com/yourname'
+
+  record:
+    icp:
+      number: ''
+      url: 'https://beian.miit.gov.cn'
+    police:
+      number: ''
+      url: ''
+
+runtime:
+  host: 'localhost'
+  port: 3000
+  revalidateSecret: 'dev-secret'
+  plausibleDomain: '' # 可选：启用 Plausible 时填写你的域名
+  env:
+    # 前端公共配置会由脚本自动写入：
+    # - NEXT_PUBLIC_SITE_URL ← site.url
+    # - NEXT_PUBLIC_PLAUSIBLE_DOMAIN ← runtime.plausibleDomain
+
+    # —— 邮件（Resend）与联系表单 ——
+    RESEND_API_KEY: '' # 服务端密钥（保留为空，示例不提供）
+    CONTACT_TO_EMAIL: 'you@example.com'
+
+    # —— Upstash Redis（限流/缓存） ——
+    UPSTASH_REDIS_REST_URL: '' # 留空代表未启用
+    UPSTASH_REDIS_REST_TOKEN: '' # 留空代表未启用
+
+    # —— Newsletter（Resend Audiences，可选） ——
+    RESEND_NEWSLETTER_AUDIENCE_ID: ''
+    NEWSLETTER_DOUBLE_OPT_IN: true
+    NEWSLETTER_FROM: 'Your Name <noreply@example.com>'
+
+    # —— GitHub（可选，用于同步项目） ——
+    GITHUB_TOKEN: ''
+
+    # —— 语雀 Yuque Open API ——
+    YUQUE_TOKEN: '' # 保留为空，示例不提供
+    YUQUE_LOGIN: 'your-yuque-login'
+
+    YUQUE_INCLUDE_DRAFTS: false
+
+github:
+  owner: 'your-github'
+  maxRepos: 50
+  include: []
+  exclude: []
+  topicFilter: []
+  featuredTopics: ['featured']
