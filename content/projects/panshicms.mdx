@@ -1,0 +1,341 @@
+---
+title: PanshiCMS
+description: PanshiCMS (磐石CMS) —— 一个为现代企业打造的、基于Go语言的、安全高效、SEO友好、面向未来的内容管理与数字化增长引擎。
+tech:
+  - gin
+  - go
+  - gorm
+  - meilisearch
+  - mysql
+  - seo
+  - totp
+  - viper
+links:
+  github: https://github.com/lushi78778/PanshiCMS
+date: 2025-08-08T16:14:17Z
+tags:
+  - gin
+  - go
+  - gorm
+  - meilisearch
+  - mysql
+  - seo
+  - totp
+  - viper
+source: github
+---
+
+> ⚙️ 本条目由 scripts/sync-projects.mjs 自动生成，来源：https://github.com/lushi78778/PanshiCMS
+{/* generated:github-sync */}
+
+# PanshiCMS (磐石CMS)
+
+[![Go Version](https://img.shields.io/badge/go-1.24+-blue.svg)](https://golang.org)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/your-repo/PanshiCMS)
+[![Project Status](https://img.shields.io/badge/status-planning-orange.svg)]()
+
+**PanshiCMS (磐石CMS) —— 一个为现代企业打造的、基于Go语言的、安全高效、SEO友好、面向未来的内容管理与数字化增长引擎。**
+
+就是不想再看phpcms了，我想把phpcms扫进垃圾桶里。该项目使用ai辅助开发。下面的描述由ai代写，按照我个人意志编写，本人基本赞同，但保留修改权利。
+
+---
+
+### 1. 项目哲学与愿景
+
+`PanshiCMS` 的诞生，源于一个核心哲学：**“万丈高楼平地起”**。我们致力于为开发者和企业提供一个无比坚实的“数字化基石”，摒弃不必要的复杂性，专注于打造一个稳定、强大且体验卓越的核心。
+
+我们的愿景是，让 `PanshiCMS` 成为：
+* **开发者的挚友**：提供清晰的架构、现代化的技术栈和友好的二次开发体验。
+* **企业的增长引擎**：通过内置的强大SEO工具、营销自动化潜力以及全渠道内容分发能力，将一个企业官网从成本中心转变为价值创造中心。
+
+
+### 2. 核心特性概览
+
+* 🚀 **极致性能**: 基于Go语言和Gin框架，提供毫秒级的响应速度和高并发处理能力。
+* 🛡️ **企业级安全**: 内置2FA双因素认证、随机后台路径、CSRF/XSS防护、密码加盐哈希、速率限制等全方位安全策略，确保您的数据资产万无一失。
+* 🔍 **卓越搜索**: 无缝集成Meilisearch，提供开箱即用的、带拼写容错的、毫秒级全站搜索体验。
+* 📈 **SEO原生**: 深度集成全套SEO优化工具，从技术、内容到运营，助力网站在搜索引擎中获得更高排名。
+* 🧩 **模块化架构**: 清晰、解耦的模块化设计，无论是二次开发还是维护都轻松自如。
+* 📦 **一键部署**: 标准化的Docker Compose方案，将复杂的环境配置简化为`docker-compose up`一条命令。
+
+### 3. 技术选型详解
+
+| 类别       | 技术/服务                   | 选型理由                                                                                             |
+| :--- |:------------------------| :--- |
+| **后端语言** | Go 1.24+                | 性能卓越，静态编译，部署简单，并发能力强，非常适合Web后端服务。                                         |
+| **Web框架** | Gin                     | 轻量级，性能在Go框架中名列前茅，API友好，社区活跃。                                                   |
+| **数据库ORM**| GORM                    | 功能强大，支持多种数据库，尤其`AutoMigrate`功能可以实现自动建表，极大简化开发和部署。                 |
+| **数据库** | SQLite (默认), MySQL (可选) | SQLite作为默认选项，实现零配置启动，降低使用门槛。MySQL作为可选，满足高性能、高并发需求。                 |
+| **配置管理** | Viper                   | 支持多种配置文件格式，能轻松管理程序启动所需的静态配置。                                             |
+| **搜索引擎** | Meilisearch             | 极其轻量、快速，提供“开箱即用”的卓越搜索体验，尤其对中文分词和拼写容错支持极佳，极大提升用户体验。 |
+| **安全认证** | TOTP (pquerna/otp库)     | 标准、可靠的双因素认证实现，提升后台安全性。                                                         |
+| **部署方案** | Docker & Docker Compose | 实现环境标准化、隔离化，一键启动所有服务（Go应用、Meilisearch等），极大简化部署和运维。                  |
+
+### 4. 宏观架构设计
+
+PanshiCMS的架构设计以**高内聚、低耦合**为核心原则，确保系统的稳定与可扩展性。
+
+```text
+[浏览器/小程序/App] <--- HTTP/API ---> [PanshiCMS Go应用 (Gin)]
+                                        |
+                                        +--------------------------+--------------------------+
+                                        |                          |                          |
+                                        [GORM] <-----> [数据库 (SQLite/MySQL)]   [Meilisearch Client] <-----> [Meilisearch服务]
+                                        |
+                                        [File I/O] <---> [本地存储/云存储 (S3)]
+```
+
+* **4.1 分层配置策略**:
+    * **静态配置 (`config.yaml`)**: 由Viper管理，用于定义数据库连接、MeiliSearch地址等程序启动时必须的参数。
+    * **动态配置 (数据库)**: 由后台“网站设置”模块管理，用于定义公司名、ICP号、联系方式等运营中可随时变更的信息。
+* **4.2 服务解耦架构**: 主应用(Go CMS)与搜索引擎(Meilisearch)作为两个独立的服务运行，通过API通信。主应用通过GORM Hooks机制，在数据发生变更时异步通知Meilisearch更新索引，保证了高性能和高可用性。
+* **4.3 可插拔存储引擎**: 通过定义统一的`FileStorage`接口，实现文件存储逻辑的解耦。初期实现`LocalStorage`，未来可轻松扩展`S3Storage`等云存储引擎。
+
+### 5. 功能模块详细规格
+
+#### 5.1 核心内容模型
+所有内容模型都将包含基础字段、SEO字段，并集成数据同步Hook。以下以**新闻文章 (`NewsArticle`)** 模型为例，展示其完整定义：
+
+```go
+package model
+
+import (
+    "gorm.io/gorm"
+    "time"
+)
+
+// NewsArticle 代表一条新闻或行业动态
+type NewsArticle struct {
+    gorm.Model // 内嵌gorm.Model，自带ID, CreatedAt, UpdatedAt, DeletedAt
+
+    // 基础字段
+    Title           string    `gorm:"not null" json:"title"`           // 标题，不能为空
+    CoverImageURL   string    `json:"cover_image_url"`                 // 封面图URL
+    Summary         string    `json:"summary"`                         // 摘要
+    Content         string    `gorm:"type:text" json:"content"`        // 正文，富文本HTML
+    PublishDate     time.Time `json:"publish_date"`                    // 发布日期
+    IsPublished     bool      `gorm:"default:true" json:"is_published"` // 是否发布状态
+
+    // SEO 字段
+    Slug            string    `gorm:"unique;not null" json:"slug"`      // URL别名，用于生成SEF URL，唯一且不能为空
+    MetaTitle       string    `json:"meta_title"`                       // 供搜索引擎使用的标题（留空则默认使用主标题）
+    MetaDescription string    `json:"meta_description"`                 // 供搜索引擎使用的页面描述
+    MetaKeywords    string    `json:"meta_keywords"`                    // 供搜索引擎使用的关键词
+}
+
+// AfterSave Hook: 在GORM中创建或更新记录后，将自动触发此函数
+func (article *NewsArticle) AfterSave(tx *gorm.DB) (err error) {
+    // 异步调用Service层的方法，将该条数据同步到Meilisearch
+    // 伪代码:
+    // if article.IsPublished {
+    //     go service.GetMeiliSearch().SyncDocument("news", article)
+    // } else {
+    //     go service.GetMeiliSearch().DeleteDocument("news", article.ID)
+    // }
+    return
+}
+
+// AfterDelete Hook: 在GORM中删除记录后，将自动触发此函数
+func (article *NewsArticle) AfterDelete(tx *gorm.DB) (err error) {
+    // 异步调用Service层的方法，从Meilisearch中删除对应文档
+    // 伪代码:
+    // go service.GetMeiliSearch().DeleteDocument("news", article.ID)
+    return
+}
+```
+#### 5.2 前端通用页面布局
+严格遵照我们讨论并确定的模块化布局，自上而下包含以下**全部**核心板块：
+
+> * **一、顶部导航栏 (Header)**:
+    >     * 企业LOGO（左侧）
+>     * 主导航菜单（右侧/居中）：首页、关于我们、产品/服务、成功案例/客户、新闻中心/行业动态、联系我们
+>     * **全站搜索框**（位于主导航与语言切换之间）
+>     * 语言切换按钮（中文/英文，最右侧）
+>     * ICP备案号展示位（建议在顶部右下角预留）
+>
+> * **二、轮播图区域 (Banner)**:
+    >     * 1~3张高清横幅图，图片源于后台“产品/服务”中被标记为“推荐到首页”的条目。
+>     * 每张图配一句简短标语，可点击跳转至具体业务页面。
+>     * 支持自动轮播 & 手动切换。
+>
+> * **三、企业简介 / 核心优势 (About Us / Value)**:
+    >     * 简明介绍公司成立时间、业务范围、愿景等。
+>     * 通过“图标+简短文字”的形式，展示核心优势（如：10年经验、50+合作客户、自主研发）。
+>
+> * **四、主营业务 / 产品服务展示**:
+    >     * 通过图文卡片的形式，分类别介绍核心业务或产品。
+>     * 可点击跳转到详情页。
+>
+> * **五、案例展示 / 合作客户**:
+    >     * 精选3~6个图文并茂的成功案例进行展示。
+>     * 以Logo墙的形式，展示重要的合作客户。
+>
+> * **六、新闻资讯 / 行业动态**:
+    >     * 以列表形式，展示最新的公司新闻或行业动态摘要。
+>
+> * **七、联系我们 (Call to Action)**:
+    >     * 清晰列出联系方式（电话、邮箱、地址）。
+>     * 提供微信二维码。
+>     * 集成一个功能完善的在线留言表单。
+>     * 嵌入百度地图或高德地图插件。
+>
+> * **八、网站底部 (Footer)**:
+    >     * 快捷导航链接。
+>     * 法律声明 / 隐私政策页面链接。
+>     * **ICP备案号** 和 **公安备案号**。
+>     * 版权所有信息 (`© 2025 Your Company`)。
+>
+> * **九、附加模块**:
+    >     * 全局浮动的在线客服或“立即咨询”按钮。
+
+### 6. 部署与运维
+
+* **6.1 部署方案**: 核心采用`docker-compose.yml`文件，一键启动Go应用及Meilisearch等所有依赖服务。
+* **6.2 备份与恢复 (高优先级)**:
+    * **备份策略**: 必须配置每日执行的定时任务（如`cron`）。
+    * **备份内容**: 将`./data/`目录（包含SQLite文件、上传文件、Meili数据）完整打包压缩。
+    * **备份存储**: 自动将备份包上传到异地云存储（如阿里云OSS）。
+* **6.3 监控与告警**:
+    * **错误监控**: 集成Sentry等服务，用于线上错误实时捕获与告警。
+    * **可用性监控**: 使用UptimeRobot等外部服务，对网站进行持续的可用性监控。
+
+### 7. 可执行的详细实现路线图
+
+我们相信，一个伟大的项目是由社区共同铸就的。这份路线图是我们的行动纲领，我们欢迎每一位开发者参与进来，共同将PanshiCMS变为现实。
+
+---
+
+#### **阶段一：奠定基石 (目标版本: v0.1 ~ v0.5)**
+**目标：构建并上线一个功能完整、安全合规、具备核心内容管理能力的MVP版本。**
+
+##### **模块 `M-PROJ-SETUP`: 项目初始化与环境配置**
+* **特性 `F-PROJ-01`: 基础环境搭建**
+    - ✅ `T-PROJ-01`: 初始化Go Module (`go mod init github.com/your-repo/PanshiCMS`)。
+    - ✅ `T-PROJ-02`: 引入Gin, GORM, Viper等核心依赖。
+    - ✅ `T-PROJ-03`: 规划并创建项目目录结构 (`/internal`, `/cmd`, `/web`等)。
+    - ✅ `T-PROJ-04`: 编写基础的Dockerfile，用于构建应用镜像。
+    - ✅ `T-PROJ-05`: 编写v1版的`docker-compose.yml`，仅包含Go应用和数据库。
+    - ✅ `T-PROJ-06`: 配置Viper，实现从`config.yaml`加载配置。
+
+##### **模块 `M-BE-CORE`: 后端核心架构**
+* **特性 `F-BE-DB-01`: 数据库与模型**
+    - ✅ `T-DB-01`: 设计并编写所有核心内容（产品、新闻、案例、网站设置等）的GORM模型Struct。
+    - ✅ `T-DB-02`: 在模型中加入基础SEO字段（Slug, MetaTitle, MetaDescription, MetaKeywords）。
+    - ✅ `T-DB-03`: 实现数据库连接逻辑，通过配置支持SQLite和MySQL的切换。
+    - ✅ `T-DB-04`: 实现GORM的`AutoMigrate`功能，在程序启动时自动建表。
+* **特性 `F-BE-API-01`: 内容核心CRUD API**
+    - ✅ `T-API-01`: 设计并实现`/api/v1/news`的RESTful接口 (GET列表, GET单条, POST, PUT, DELETE)。
+    - ✅ `T-API-02`: 为上述API编写对应的Handler函数，处理业务逻辑。
+    - ✅ `T-API-03`: 对其他核心模型（产品、案例等）重复以上API和Handler的开发。
+
+##### **模块 `M-ADMIN-PANEL`: 后台管理系统**
+* **特性 `F-ADMIN-AUTH-01`: 管理员认证 (v1 - 基础版)**
+    - ✅ `T-AUTH-01`: 设计管理员用户`AdminUser`模型（含密码哈希与加盐字段）。
+    - ✅ `T-AUTH-02`: 实现密码的哈希与验证逻辑。
+    - ✅ `T-AUTH-03`: 编写登录接口`/admin/login`和JWT/Session生成逻辑。
+    - ✅ `T-AUTH-04`: 编写一个认证中间件，用于保护所有后台API。
+    - ✅ `T-AUTH-05`: 开发`/do?action=init`初始化流程，用于创建第一个管理员。
+* **特性 `F-ADMIN-UI-01`: 内容管理界面**
+    - ✅ `T-UI-01`: 搭建后台基础布局（侧边栏导航、顶部栏、主内容区）。
+    - ✅ `T-UI-02`: 开发新闻模块的列表页面（含分页、搜索）。
+    - ✅ `T-UI-03`: 开发新闻模块的新建/编辑页面（含富文本编辑器、图片上传、SEO字段输入框）。
+    - ✅ `T-UI-04`: 对其他核心模块重复以上UI开发。
+
+##### **模块 `M-FE-SSR`: 前端服务端渲染**
+* **特性 `F-FE-PAGES-01`: 核心页面渲染**
+    - ✅ `T-SSR-01`: 编写Go HTML模板：首页、列表页、详情页、关于我们、联系我们。
+    - ✅ `T-SSR-02`: 编写对应的Gin处理器，查询数据库并将数据渲染到模板中。
+    - [ ] `T-SSR-03`: 实现轮播图功能，数据从后台标记的推荐服务中获取。
+    - [ ] `T-SSR-04`: 确保所有页面的TDK和SEF URL能正确生成。
+
+##### **模块 `M-COMPLIANCE`: 基础功能与合规性**
+* **特性 `F-FUNC-01`: 基础功能**
+    - ✅ `T-FUNC-01`: 实现本地文件上传功能，并能在富文本编辑器中使用。
+    - [ ] `T-FUNC-02`: 实现“联系我们”表单的后端接收和邮件通知功能。
+* **特性 `F-CMPL-01`: 合规性**
+    - ✅ `T-CMPL-01`: 在网站底部从“网站设置”中动态获取并展示ICP和公安备案号。
+    - ✅ `T-CMPL-02`: 创建“隐私政策”和“法律声明”的后台编辑与前台展示。
+
+---
+
+#### **阶段二：精装升级 (目标版本: v0.6 ~ v1.0)**
+**目标：全面提升网站的专业度、用户体验、运营效率和SEO表现，达到行业一流水准。**
+
+##### **模块 `M-SEARCH`: 搜索引擎集成**
+* **特性 `F-SRCH-01`: Meilisearch部署与集成**
+    - [ ] `T-SRCH-01`: 更新`docker-compose.yml`，加入Meilisearch服务。
+    - [ ] `T-SRCH-02`: 在Go应用中实现Meilisearch客户端的初始化和服务化。
+    - [ ] `T-SRCH-03`: 编写一个一次性脚本，用于将存量数据库内容全量同步到Meilisearch。
+* **特性 `F-SRCH-02`: 数据实时同步**
+    - [ ] `T-SYNC-01`: 为`NewsArticle`模型编写`AfterSave`和`AfterDelete`的GORM Hook。
+    - [ ] `T-SYNC-02`: 在Hook中调用Meilisearch服务，实现数据的实时增、删、改。
+    - [ ] `T-SYNC-03`: 对其他需要被搜索的模型重复此过程。
+* **特性 `F-SRCH-03`: 前端搜索功能**
+    - [ ] `T-FE-SRCH-01`: 在顶部导航栏实现搜索框UI。
+    - [ ] `T-FE-SRCH-02`: 开发`/api/search`接口，该接口负责查询Meilisearch。
+    - [ ] `T-FE-SRCH-03`: 对接前端搜索框与API，实现即时搜索下拉建议或跳转到搜索结果页。
+
+##### **模块 `M-SECURITY`: 安全强化**
+* **特性 `F-SEC-2FA-01`: 后台双因素认证**
+    - [ ] `T-2FA-01`: 在管理员用户模型中增加2FA密钥和状态字段。
+    - [ ] `T-2FA-02`: 开发首次登录后强制绑定2FA的流程（生成密钥、显示二维码）。
+    - [ ] `T-2FA-03`: 修改登录流程，在密码验证后增加2FA动态口令验证步骤。
+
+##### **模块 `M-OPS-SEO`: 运营与高级SEO**
+* **特性 `F-SEO-TOOLS-01`: 高级SEO套件**
+    - ✅ `T-SEO-01`: 开发动态Sitemap生成器 (`/sitemap.xml`)。
+    - [ ] `T-SEO-02`: 开发后台Robots.txt在线编辑器。
+    - [ ] `T-SEO-03`: 开发301重定向管理模块（后台UI+中间件）。
+    - [ ] `T-SEO-04`: 实现自动注入JSON-LD结构化数据和Open Graph标签。
+* **特性 `F-OPS-TOOLS-01`: 运营与维护**
+    - [ ] `T-OPS-01`: 编写并配置自动化备份脚本（数据库+文件+Meili数据）。
+    - [ ] `T-OPS-02`: 集成Sentry或类似服务，用于错误监控。
+    - [ ] `T-OPS-03`: 设计并实现自定义的404错误页面。
+
+---
+
+### 8. 未来规划 (v1.0+ Future Roadmap)
+
+此为项目的远期规划，将在核心版本稳定后，根据社区反馈和商业需求择机实施。
+
+* **模块 `M-AI-INTEGRATION`: 智能化与营销自动化**
+    - [ ] 特性 `F-AI-01`: AIGC辅助内容创作。
+    - [ ] 特性 `F-AI-02`: 智能客服机器人。
+    - [ ] 特性 `F-CRM-01`: 主流CRM系统API对接。
+* **模块 `M-ECOSYSTEM`: 构建数字生态**
+    - [ ] 特性 `F-HEADLESS-01`: 演进为无头CMS (Headless) 架构，强化API。
+    - [ ] 特性 `F-MINIAPP-01`: 开发微信小程序客户端。
+    - [ ] 特性 `F-3D-AR-01`: 为产品模块增加3D/AR内容支持。
+
+还需要：
+1. 后台路径动态化：
+   当前后台管理路径是固定的（/admin）。未来版本应支持动态生成并配置后台路径，避免默认路径容易被发现。通过在 站点设置 中存储随机路径，可以提高安全性，且后台的所有路由应包含该动态路径。
+
+2. URL 别名管理：
+   当前的 slug 只是各自模型（新闻、服务、案例）的唯一标识，建议实现一个全局 别名表 来管理 URL 别名，避免不同内容的 slug 出现冲突，同时简化路由映射管理。
+
+3. 前端 UI 优化：
+   目前的 UI 采用了 Layui，建议在未来版本中使用 Astro 或 React 等现代前端框架进行重构。这不仅能提升用户体验，还能实现更好的响应式设计，优化页面在不同设备上的展示效果。
+
+4. 智能营销和自动化：
+   未来版本可以引入 AI 辅助内容生成和营销自动化，比如根据网站数据生成个性化的内容推荐，自动化推送文章，提升网站内容更新和用户互动的效率。
+
+5. 云存储和可扩展性：
+   当前实现了本地文件存储，后期可以考虑将存储引擎迁移到云平台，使用 S3 或类似的云存储服务，提升系统的存储能力和可扩展性。
+
+6. 高级 SEO 功能：
+   系统可以增加更多 高级 SEO 工具，例如自动生成 Open Graph 标签、JSON-LD 结构化数据、schema.org 集成等。这些功能可以帮助网站在搜索引擎中获得更好的展示，尤其是在 Google 中的丰富结果。
+
+7. 用户角色管理：
+   实现更为细致的 角色权限管理（RBAC），允许根据不同的用户角色（如内容编辑、营销人员、管理员）分配不同的访问权限。这样可以让团队成员根据权限执行相应的操作，提高工作效率和系统安全性。
+
+8. 分析与报告：
+   集成 Google Analytics 或内部分析系统，帮助网站管理员和业务人员更好地跟踪访问数据、用户行为、内容表现等重要指标，提升运营效率。
+### 9. 如何贡献 (Contributing)
+
+我们热烈欢迎所有形式的贡献！无论是提交bug、建议新功能还是贡献代码。请在提交Pull Request前阅读我们的贡献指南（`CONTRIBUTING.md` - 待创建）。
+
+### 10. 许可证 (License)
+
+本项目带选定，计划采用 [MIT License](https://opensource.org/licenses/MIT) 开源。

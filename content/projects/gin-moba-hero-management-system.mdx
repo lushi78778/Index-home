@@ -1,0 +1,81 @@
+---
+title: gin-moba-hero-management-system
+description: 这是一个教学案例。 这是一个基于 Go 语言 和 Gin 框架 开发的 MOBA 英雄管理系统。
+links:
+  github: https://github.com/lushi78778/gin-moba-hero-management-system
+date: 2025-07-02T14:57:27Z
+source: github
+---
+
+> ⚙️ 本条目由 scripts/sync-projects.mjs 自动生成，来源：https://github.com/lushi78778/gin-moba-hero-management-system
+{/* generated:github-sync */}
+
+# MOBA 英雄管理系统
+
+## 项目概述
+
+这是一个教学案例。<br />
+这是一个基于 **Go 语言** 和 **Gin 框架** 开发的 **MOBA 英雄管理系统**。该系统允许用户管理有关英雄的信息，包括英雄的类型和技能。系统与 MySQL 数据库进行交互，用于存储和获取英雄数据，并提供简单的 Web 界面用于数据管理。
+
+## 功能
+
+- **英雄管理**：管理和展示英雄的名字、类型和技能。
+- **数据库集成**：使用 MySQL 存储和检索英雄数据。
+- **Web 界面**：提供简单的 Web 界面来与应用程序交互。
+- **日志记录**：配置了日志记录，以跟踪应用程序事件。
+
+## 安装
+
+1. 克隆仓库：
+    ```bash
+    git clone https://github.com/lushi78778/gin-moba-hero-management-system.git
+    cd gin-moba-hero-management-system
+    ```
+
+2. 安装依赖：
+    ```bash
+    go mod tidy
+    ```
+
+3. 配置数据库：
+    - 打开 `config.yaml` 文件，设置正确的数据库配置（用户名、密码、主机、端口和数据库名）。
+
+4. 运行应用：
+    ```bash
+    go run main.go
+    ```
+
+5. 默认情况下，应用将在 `http://localhost:8080` 启动。
+
+## 配置
+
+该项目使用 `config.yaml` 文件进行配置。主要设置如下：
+
+- **数据库配置**：
+    ```yaml
+    db:
+      username: root
+      password: 123456
+      host: 127.0.0.1
+      port: 3306
+      dbname: learn
+    ```
+
+## 文件结构
+
+- `main.go`：应用程序的入口点。初始化数据库连接并设置 Gin 路由。
+- `config.yaml`：包含数据库连接详细信息的配置文件。
+- `models/hero.go`：定义了 `Hero` 模型，表示数据库中英雄数据的结构。
+- `db/`：包含与数据库相关的功能，例如初始化和关闭数据库连接。
+- `templates/`：存放用于渲染网页的 HTML 模板。
+
+## 使用的技术
+
+- **Go**：用于构建后端的编程语言。
+- **Gin**：用于构建 Web 服务器和路由的 Web 框架。
+- **GORM**：用于与数据库交互的 ORM。
+- **MySQL**：用于存储英雄数据的数据库。
+
+## 许可证
+
+该项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。

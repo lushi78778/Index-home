@@ -1,0 +1,54 @@
+---
+title: microcontrollers_learn
+description: Just a microcontroller experiment
+links:
+  github: https://github.com/lushi78778/microcontrollers_learn
+  demo: https://gitee.com/hebau_study/microcontrollers_learn
+date: 2023-12-31T01:03:18Z
+source: github
+---
+
+> ⚙️ 本条目由 scripts/sync-projects.mjs 自动生成，来源：https://github.com/lushi78778/microcontrollers_learn
+{/* generated:github-sync */}
+
+{/*
+ * @Author: lushi78778
+ * @Date: 2021-06-19 16:46:01
+ * @LastEditTime: 2021-06-19 16:46:56
+ * @FilePath: \microcontrollers_learn\README.md
+*/}
+# microcontrollers_learn
+
+## 介绍
+
+### 单片机试验罢了
+```
+proteus     对应的仿真文件
+asm         汇编文件
+reference   参考程序
+```
+
+### 实验题目如下:
+
+- 假定用P1口做输出口，连接8个发光二极管，编写程序使发光二极管显示7亮1灭（高电平亮，低电平灭）
+
+- 用P1口做输出口，编写程序使发光二极管从右到左轮流循环点亮。
+
+- 用P0口做输出口，编写程序使发光二极管按照二进制加法的规则点亮。
+
+- 用P1.0作为控制输出口，接继电器电路，使继电器重复吸合与断开；用P1.1作为控制输出口，接发光二极管，使其当继电器吸合时点亮，当继电器断开时熄灭；观察P1口仿真情况，理解继电器重复延时吸合与延时断开。
+
+- 用P1.0作输入接独立按键，P1.1作输出接一个发光二极管，P1.2连接继电器。编写程序读取开关状态，并在发光二极管上显示出来，同时控制继电器状态变化。
+
+- INT0端（P3.2）接单次脉冲发生器（利用Keil仿真模拟），即仿真窗口P3.2点击;假设P1.0接LED发光二极管，以查看信号反转;当点击P3.2时（从高到低），LED发光二极管状态改变，P1.0状态变化。
+
+- 点击仿真窗口P3.5,连续按动按键，观察仿真窗口P1口变化，显示按键次数。
+
+- 连接P1.0到LED发光二极管,使发光二极管隔一秒点亮一次，点亮时间为一秒。
+
+- P0连接静态数码管的输入端，让静态数码管显示“80C51”
+
+- P0 连接74HC573(需要接上拉电阻，P0没有内部上拉)，输出段码，控制要显示的字符;P1.0，P1.1，P1.2分别连接74HC138的A、B、C端，输出位码，控制那一片LED数码管被选中，让8个LED数码管显示“80512020”。
+
+- 将P2口和矩阵键盘连接，其中矩阵键盘从上到下四行分别对应P2.4-P2.7，从左至右分别对应P2.3-P2.0;将P0口和静态显示LED数码管连接（P0口需要接上拉电阻），设从上到下，从右至左的按键依次编号为0-F;实现对应按键按下，则led数码管显示相应的按键编号。
+

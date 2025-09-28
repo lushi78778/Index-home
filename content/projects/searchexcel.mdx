@@ -1,0 +1,117 @@
+---
+title: searchExcel
+description: An efficient Excel data retrieval tool developed with Go language.
+tech:
+  - cli
+  - excel
+  - go
+  - search
+  - sqlite
+links:
+  github: https://github.com/lushi78778/searchExcel
+date: 2025-07-18T15:37:45Z
+tags:
+  - cli
+  - excel
+  - go
+  - search
+  - sqlite
+source: github
+---
+
+> ⚙️ 本条目由 scripts/sync-projects.mjs 自动生成，来源：https://github.com/lushi78778/searchExcel
+{/* generated:github-sync */}
+
+# searchExcel - 本地 Excel 內容檢索系統
+
+這是一個基於 Go 語言開發的本地 Web 應用程式，旨在提供一個高效、私密且易於使用的 Excel 檔案內容檢索方案。使用者無需安裝複雜的資料庫或依賴雲端服務，即可在自己的電腦上對大量的 Excel 檔案建立索引，並根據指定的儲存格內容（如身分證號、訂單號等）快速反查到其所在的整行資料。
+
+有bug请提Issue，我会修的。需要新功能请提Issue，视情况开发。欢迎贡献。
+---
+
+## 核心功能
+
+* **Web 使用者介面**: 提供一個現代化、直觀的網頁介面，所有操作（上傳、搜尋、管理）都在瀏覽器中完成。
+* **ZIP 檔案匯入**: 支援上傳包含 Excel 檔案的 `.zip` 壓縮包，後端會自動解壓縮並按原檔名建立子資料夾進行管理。
+* **自動格式轉換**: 內建呼叫 LibreOffice 的能力，可自動將舊版的 `.xls` 檔案轉換為 `.xlsx` 格式，實現對新舊版本的無縫支援。
+* **精準資料索引**: 採用 SQLite 作為本地資料庫，為每個 Excel 檔案中的每一行資料建立索引，索引鍵值為該行所有儲存格的內容。
+* **批次查詢**: 搜尋框支援貼上多行文本，可一次性查詢多個關鍵字，系統會將結果按查詢詞分組展示。
+* **結構化結果展示**: 搜尋結果以表格形式清晰地展示匹配到的資料行及其表頭，並高亮顯示匹配的儲存格。
+* **即時進度與日誌**: 使用 Server-Sent Events (SSE) 技術，在上傳和索引等耗時操作期間，向前端即時推送進度條和詳細的日誌訊息。
+* **完善的資料管理**: 提供「完整重建索引」和「清除全部資料」的功能，方便使用者維護索引庫。
+* **外部設定檔**: 透過 `config.yaml` 檔案管理應用程式的關鍵路徑（如檔案儲存路徑、LibreOffice 執行路徑），方便在不同環境下部署。
+* **一鍵啟動**: 為 Windows, macOS, Linux 等主流平台提供了方便的啟動腳本 (`start.bat`, `start.command`)，使用者雙擊即可啟動服務並自動打開瀏覽器。
+
+---
+
+## 如何使用 (給一般使用者)
+
+#### 1. 前置要求
+
+您只需要在您的電腦上安裝 **LibreOffice**。這是一個免費的開源辦公軟體套件，我們的工具需要用它來處理舊版的 `.xls` 檔案。
+
+* [點此下載 LibreOffice](https://www.libreoffice.org/download/download-libreoffice/)
+
+#### 2. 快速開始
+
+1.  **下載**: 從 `build` 資料夾中，下載對應您作業系統的壓縮包（例如 `searchExcel_darwin_arm64.zip` 對應蘋果 M 系列晶片的 Mac）。
+2.  **解壓縮**: 將下載的 ZIP 檔案解壓縮到您希望存放的位置。
+3.  **設定路徑 (首次使用時必須)**:
+    * 打開解壓縮後的資料夾，找到 `config.yaml` 檔案。
+    * 用文字編輯器打開它。
+    * 修改 `libreoffice_path` 這一項，填入您電腦上 LibreOffice 的**完整執行檔路徑**。
+        * **macOS 範例**: `/Applications/LibreOffice.app/Contents/MacOS/soffice`
+        * **Windows 範例**: `C:\Program Files\LibreOffice\program\soffice.exe` (請注意 Windows 的路徑格式)
+4.  **啟動程式**:
+    * **Windows**: 直接雙擊 `start.bat`。
+    * **macOS**: 直接雙擊 `start.command`。
+    * **Linux**: 在終端機中執行 `./start.sh`。
+5.  **使用**: 腳本會自動打開一個終端機視窗（請勿關閉），並在幾秒後自動打開您的預設瀏覽器，載入工具介面。現在您可以開始上傳和搜尋了！
+
+---
+
+## 如何開發 (給開發者)
+
+#### 1. 環境準備
+
+* 安裝 [Go](https://go.dev/doc/install) (建議 1.20 或更高版本)。
+* 安裝 [LibreOffice](https://www.libreoffice.org/download/download-libreoffice/)。
+* Clone 本專案程式碼。
+
+#### 2. 本地開發
+
+1.  在專案根目錄下，執行 `go mod tidy` 下載所有依賴。
+2.  根據您的系統，修改 `config.yaml` 中的 `libreoffice_path`。
+3.  執行 `go run main.go` 啟動開發伺服器。
+4.  在瀏覽器中訪問 `http://127.0.0.1:8080`。
+
+#### 3. 跨平台打包
+
+專案根目錄下已包含一個 `build.sh` 腳本，用於為所有主流平台進行編譯和打包。
+
+* 在 macOS 或 Linux 系統下，直接執行：
+    ```bash
+    ./build.sh
+    ```
+* 腳本執行完畢後，所有平台的完整應用程式壓縮包將會出現在 `./build` 資料夾中。
+
+---
+
+## 原始碼 (Source Code)
+
+本專案為開源專案，所有程式碼均已發佈至 GitHub，歡迎進行審查、提出問題或貢獻程式碼。
+
+* **GitHub 儲存庫**: [https://github.com/lushi78778/searchExcel](https://github.com/lushi78778/searchExcel)
+
+---
+
+## 免責聲明 (Disclaimer)
+
+本軟體按「原樣」提供，不附帶任何明示或暗示的保證，包括但不限於對適銷性、特定目的的適用性和非侵權性的保證。
+
+* **資料安全**: 本工具所有操作均在您的本機電腦上完成，任何檔案或資料都不會被上傳至任何網路伺服器。您應對自己的資料安全負全部責任。強烈建議您在使用本工具前，對重要資料進行備份。
+* **責任限制**: 在任何情況下，作者或貢獻者均不對因使用或無法使用本軟體而導致的任何索賠、損害或其他責任負責，無論是在合約、侵權或其他訴訟中。這包括但不限於資料遺失、資料不準確、或由您或第三方造成的損失。
+* **合規使用**: 您有責任確保您對資料的使用方式符合您所在地區的法律法規，特別是與個人隱私和資料保護相關的法律。
+* **外部依賴**: 本工具依賴 LibreOffice 進行檔案格式轉換。因 LibreOffice 本身的任何問題、錯誤或漏洞所造成的後果，本軟體作者不承擔任何責任。
+
+**使用本軟體即表示您已閱讀、理解並同意上述所有條款。**

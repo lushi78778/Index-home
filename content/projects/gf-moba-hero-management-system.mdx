@@ -1,0 +1,103 @@
+---
+title: gf-moba-hero-management-system
+description: 教学项目 这是一个基于 GoFrame 框架构建的 MOBA 英雄管理系统，包括英雄的增删改查操作，支持动态数据展示和用户交互。
+links:
+  github: https://github.com/lushi78778/gf-moba-hero-management-system
+date: 2025-07-03T13:48:49Z
+source: github
+---
+
+> ⚙️ 本条目由 scripts/sync-projects.mjs 自动生成，来源：https://github.com/lushi78778/gf-moba-hero-management-system
+{/* generated:github-sync */}
+
+# MOBA 英雄管理系统
+
+## 项目简介
+
+教学项目<br />
+这是一个基于 GoFrame 框架构建的 MOBA 英雄管理系统，旨在为游戏开发提供简单易用的英雄管理功能。该系统包括英雄的增删改查操作，支持动态数据展示和用户交互。前端使用 HTML 和 JavaScript 实现，后端使用 GoFrame 构建 API 接口。
+
+## 功能
+
+- **英雄管理**：可以添加、查看、删除英雄。
+- **接口交互**：通过 RESTful API 接口进行数据的增删改查。
+- **数据展示**：动态展示所有英雄信息，并支持删除操作。
+
+## 技术栈
+
+- **后端**：GoFrame 框架（Go）
+- **前端**：HTML, CSS, JavaScript (Fetch API)
+- **数据库**：MySQL（用于存储英雄数据）
+
+## 环境要求
+
+- Go 1.18 及以上版本
+- MySQL 数据库
+
+## 安装和配置
+
+1. 克隆本项目：
+
+    ```bash
+    git clone https://github.com/lushi78778/gf-moba-hero-management-system.git
+    cd gf-moba-hero-management-system
+    ```
+
+2. 安装 GoFrame 框架：
+
+    ```bash
+    go get github.com/gogf/gf/v2
+    ```
+
+3. 配置数据库（如果未配置）：
+    - 请确保 MySQL 服务已启动，并在数据库中创建一个新的数据库，用于存储英雄数据。
+    - 配置数据库连接信息，在 `config` 文件中添加数据库连接详情。
+
+4. 启动服务器：
+
+    ```bash
+    go run cmd/main.go
+    ```
+
+   默认情况下，服务器会监听 `http://127.0.0.1:8001`。
+
+## 使用说明
+
+### 1. 添加英雄
+
+在首页上填入英雄名称、类型和技能信息，点击“添加英雄”按钮，将英雄信息发送到后端 API，成功后会在英雄列表中显示。
+
+### 2. 查看英雄列表
+
+英雄列表展示了系统中的所有英雄信息，包括英雄名称、类型和技能。每个英雄条目旁边都有一个“删除”按钮，可以删除该英雄。
+
+### 3. 删除英雄
+
+点击“删除”按钮后，系统将会删除该英雄信息并从列表中移除。
+
+## API 文档
+
+swagger ui is serving at address: http://127.0.0.1:8001/swagger/
+
+## 常见问题
+
+1. **如何配置数据库连接？**
+    - 请在 `config` 目录下修改数据库配置文件，填入正确的数据库连接信息。
+
+2. **我想部署到生产环境，如何进行配置？**
+    - 请参考 GoFrame 的文档来进行生产环境的部署配置，包括但不限于配置数据库、日志、缓存等。
+
+## 开发者说明
+
+### 架构设计
+
+- 本项目采用 GoFrame 框架，利用其强大的路由、数据库 ORM、请求处理等功能，快速构建了一个简洁且功能完善的 MOBA 英雄管理系统。
+- 项目采用 MVC 架构，后端通过 API 提供数据，前端通过 HTML 页面和 JavaScript 动态展示数据。
+
+## 贡献
+
+如果你有任何问题或建议，欢迎提交 Issue 或 Pull Request。
+
+## License
+
+本项目使用 MIT License，详情见 [LICENSE](LICENSE) 文件。
