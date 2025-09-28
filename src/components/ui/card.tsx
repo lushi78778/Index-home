@@ -22,8 +22,14 @@ export function CardTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="text-lg font-semibold leading-snug">{children}</h3>
 }
 
-export function CardDescription({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>
+export function CardDescription({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return <p className={`text-sm text-muted-foreground ${className}`}>{children}</p>
 }
 
 export function CardContent({ children }: { children: React.ReactNode }) {

@@ -17,7 +17,8 @@
     "e2e:ui": "playwright test --ui",
     "clean": "rimraf .next out dist .turbo .next/types public/sw.js public/workbox-*.js public/fallback-*.js",
     "clean:all": "npm run clean && rimraf node_modules",
-    "lhci": "lhci autorun --collect.numberOfRuns=1"
+    "lhci": "lhci autorun --collect.numberOfRuns=1",
+    "sync:projects": "node scripts/sync-projects.mjs"
   },
   "engines": {
     "node": ">=18.17.0"
@@ -32,20 +33,24 @@
     "clsx": "2.1.1",
     "github-slugger": "2.0.0",
     "lucide-react": "0.453.0",
+    "marked": "^12.0.2",
+    "mind-elixir": "^5.2.1",
     "minisearch": "7.1.0",
     "next": "14.2.5",
     "next-intl": "^3.16.0",
     "next-themes": "0.3.0",
+    "prismjs": "^1.29.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hook-form": "^7.53.0",
     "rehype-pretty-code": "^0.12.6",
     "resend": "3.2.0",
+    "sanitize-html": "^2.17.0",
     "tailwind-merge": "^3.3.1",
-    "zod": "3.23.8"
+    "zod": "3.23.8",
+    "yaml": "^2.5.1"
   },
   "devDependencies": {
-    "yaml": "^2.5.1",
     "@lhci/cli": "^0.13.0",
     "@next/mdx": "14.2.5",
     "@playwright/test": "^1.47.2",
@@ -56,6 +61,8 @@
     "@types/node": "20.14.10",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
+    "@types/sanitize-html": "^2.16.0",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
     "autoprefixer": "10.4.20",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.5",

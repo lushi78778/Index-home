@@ -4,6 +4,10 @@ import { siteConfig } from '@/config/site'
 export function Footer() {
   const icp = siteConfig.record?.icp
   const police = siteConfig.record?.police
+  const hasFooterRecord = !!(icp || police)
+  const hasFloatingICP = !!(icp?.url && icp?.number)
+  const hasFloatingPolice = !!(police?.url && police?.number)
+  const showFloating = hasFloatingICP || hasFloatingPolice
   return (
     <footer className="relative border-t py-8 text-center text-sm text-muted-foreground">
       <div className="container mx-auto px-4 space-y-2">
@@ -23,43 +27,66 @@ export function Footer() {
               </a>
             </span>
           )}
+          <span className="ml-2">
+            ·{' '}
+            <Link href="/policies" className="underline">
+              合规与使用说明
+            </Link>
+          </span>
         </div>
-        {/* 备案信息 */}
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {icp && (
-            <a href={icp.url} target="_blank" rel="noreferrer" className="hover:text-foreground">
-              {icp.number}
-            </a>
-          )}
-          {police && (
+        {hasFooterRecord && (
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {icp?.number && icp?.url && (
+              <a href={icp.url} target="_blank" rel="noreferrer" className="hover:text-foreground">
+                {icp.number}
+              </a>
+            )}
+            {police?.number && police?.url && (
+              <a
+                href={police.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 hover:text-foreground"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M12 2l7 3v6c0 5-3.5 9.74-7 11-3.5-1.26-7-6-7-11V5l7-3z" />
+                </svg>
+                <span>{police.number}</span>
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+      {/* 悬挂式公安备案（可选） */}
+      {showFloating && (
+        <div className="fixed bottom-4 right-4 space-y-2 text-xs">
+          {hasFloatingICP && (
             <a
-              href={police.url}
+              href={icp!.url}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1 hover:text-foreground"
+              className="inline-flex items-center gap-1 rounded bg-background/70 px-2 py-1 shadow hover:bg-background"
             >
-              {/* 简易公安盾牌图标 */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M4 4h16v2H4zm0 6h16v2H4zm0 6h16v2H4z" />
+              </svg>
+              <span>{icp!.number}</span>
+            </a>
+          )}
+          {hasFloatingPolice && (
+            <a
+              href={police!.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded bg-background/70 px-2 py-1 shadow hover:bg-background"
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                 <path d="M12 2l7 3v6c0 5-3.5 9.74-7 11-3.5-1.26-7-6-7-11V5l7-3z" />
               </svg>
-              <span>{police.number}</span>
+              <span>{police!.number}</span>
             </a>
           )}
         </div>
-      </div>
-      {/* 悬挂式公安备案（可选） */}
-      {police && (
-        <a
-          href={police.url}
-          target="_blank"
-          rel="noreferrer"
-          className="fixed bottom-4 right-4 inline-flex items-center gap-1 rounded bg-background/70 px-2 py-1 text-xs shadow hover:bg-background"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-            <path d="M12 2l7 3v6c0 5-3.5 9.74-7 11-3.5-1.26-7-6-7-11V5l7-3z" />
-          </svg>
-          <span>{police.number}</span>
-        </a>
       )}
     </footer>
   )

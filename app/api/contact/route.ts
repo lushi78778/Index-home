@@ -3,25 +3,42 @@ import { z } from 'zod'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
+const MAX_MESSAGE_LENGTH = 2000
+const CONTACT_RATE_LIMIT = { limit: 3, window: '5 m' as const }
+
 // Use Node.js runtime to allow importing server-only email libraries safely
 export const runtime = 'nodejs'
 
 // Server 端表单校验（与客户端一致）
 const Schema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  message: z.string().min(10),
-  website: z.string().optional(), // 蜜罐
+  name: z.string().trim().min(2, '姓名至少 2 个字符').max(60, '姓名长度过长'),
+  email: z.string().email('邮箱格式不正确').max(254),
+  message: z
+    .string()
+    .trim()
+    .min(10, '内容太短')
+    .max(MAX_MESSAGE_LENGTH, `内容请控制在 ${MAX_MESSAGE_LENGTH} 字符以内`),
+  website: z.string().trim().optional(), // 蜜罐字段，机器人常会填写
 })
 
-// TODO: 接入真实邮件服务（如 Resend/SMTP），并加上速率限制（如 Upstash Ratelimit）
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export async function POST(req: Request) {
   const data = await req.json()
   const parsed = Schema.safeParse(data)
   if (!parsed.success) {
     return NextResponse.json({ ok: false, error: 'invalid' }, { status: 400 })
   }
-  if (parsed.data.website) {
+  const payload = parsed.data
+
+  if (payload.website) {
     // 蜜罐命中
     return NextResponse.json({ ok: true })
   }
@@ -31,7 +48,10 @@ export async function POST(req: Request) {
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
   if (redisUrl && redisToken) {
     const redis = new Redis({ url: redisUrl, token: redisToken })
-    const ratelimit = new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, '5 m') })
+    const ratelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(CONTACT_RATE_LIMIT.limit, CONTACT_RATE_LIMIT.window),
+    })
     const { success, reset, limit, remaining } = await ratelimit.limit(`contact:${ip}`)
     if (!success) {
       const nowSec = Math.floor(Date.now() / 1000)
@@ -73,15 +93,31 @@ export async function POST(req: Request) {
       : 'example.com'
     const fromDisplay =
       process.env.NEWSLETTER_FROM || `Website Contact <noreply@${defaultFromDomain}>`
+
+    const submittedAt = new Date().toISOString()
+    const text = `Name: ${payload.name}\nEmail: ${payload.email}\nIP: ${ip}\nSubmitted: ${submittedAt}\n\n${payload.message}`
+    const html = `
+      <h1>新的联系表单</h1>
+      <p><strong>姓名：</strong> ${escapeHtml(payload.name)}</p>
+      <p><strong>邮箱：</strong> ${escapeHtml(payload.email)}</p>
+      <p><strong>IP：</strong> ${escapeHtml(ip)}</p>
+      <p><strong>时间：</strong> ${escapeHtml(submittedAt)}</p>
+      <hr />
+      <p>${escapeHtml(payload.message).replace(/\n/g, '<br />')}</p>
+    `.trim()
+
     await resend.emails.send({
       from: fromDisplay,
       to,
-      subject: `[Contact] ${parsed.data.name}`,
-      text: `Name: ${parsed.data.name}\nEmail: ${parsed.data.email}\n\n${parsed.data.message}`,
+      subject: `[Contact] ${payload.name}`,
+      reply_to: payload.email,
+      text,
+      html,
+      tags: [{ name: 'form', value: 'contact' }],
     })
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('Resend error', err)
-    return NextResponse.json({ ok: false }, { status: 500 })
+    return NextResponse.json({ ok: false, error: 'email_failed' }, { status: 502 })
   }
 }

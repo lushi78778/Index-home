@@ -5,10 +5,9 @@ import { siteConfig } from '@/config/site'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { MDXRemote } from 'next-mdx-remote/rsc'
-import rehypeSlug from 'rehype-slug'
-import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import remarkGfm from 'remark-gfm'
 import { mdxComponents } from '@/components/mdx/mdx-components'
+import { SyntaxHighlighter } from '@/components/site/syntax-highlighter'
 import { JsonLd } from '@/components/site/json-ld'
 
 export const revalidate = 60 * 60 * 24
@@ -85,20 +84,16 @@ export default function ProjectPage({ params }: { params: { slug: string } }) {
       ) : null}
 
       {/* 项目正文（MDX 渲染） */}
-      {project.content && (
-        <MDXRemote
-          source={project.content}
-          options={{
-            mdxOptions: {
-              remarkPlugins: [remarkGfm as any],
-              rehypePlugins: [
-                rehypeSlug as any,
-                [rehypeAutolinkHeadings as any, { behavior: 'wrap' }],
-              ],
-            },
-          }}
-          components={mdxComponents as any}
-        />
+      {project.content && project.content.trim().length > 0 && (
+        <>
+          {/* 仅在项目页用 Prism 客户端高亮，避免 RSC/rehype 冲突 */}
+          <SyntaxHighlighter />
+          <MDXRemote
+            source={project.content}
+            options={{ mdxOptions: {} }}
+            components={mdxComponents as any}
+          />
+        </>
       )}
 
       {/* 结构化数据：若存在 GitHub 仓库，则使用 SoftwareSourceCode，否则使用 CreativeWork */}

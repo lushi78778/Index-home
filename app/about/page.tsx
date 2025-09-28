@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 import { siteConfig } from '@/config/site'
 import { JsonLd } from '@/components/site/json-ld'
-import { PrintResumeButton } from '@/components/site/print-resume'
+import { getAllProjects } from '@/lib/content'
 
 export const metadata: Metadata = {
   title: '关于',
-  description: '关于我：个人介绍、履历时间线、技能矩阵、下载简历。',
+  description: '关于我：个人介绍与基于项目自动汇总的技能概览。',
   alternates: { canonical: `${siteConfig.url}/about` },
 }
 
@@ -25,39 +25,34 @@ export default function AboutPage() {
     },
   }
 
-  const timeline = [
-    {
-      time: '2024 - 至今',
-      title: '全栈工程师 / 技术负责人',
-      detail: '聚焦 Next.js、边缘计算与内容平台建设，推动性能与工程效率提升。',
-    },
-    {
-      time: '2022 - 2024',
-      title: '前端工程师',
-      detail: '主导设计系统落地，沉淀组件库与可访问性规范，优化 Lighthouse 95+。',
-    },
-  ]
-
-  const skills = [
-    { name: 'Web / Framework', items: ['Next.js', 'React', 'Node.js', 'Vite'] },
-    { name: 'Language', items: ['TypeScript', 'JavaScript', 'SQL'] },
-    { name: 'Infra', items: ['Vercel', 'Cloudflare', 'Docker', 'GitHub Actions'] },
-  ]
+  // 从项目聚合技能：统计 tech 与 tags 的出现频率，取 Top N
+  const projects = getAllProjects()
+  const countMap = new Map<string, number>()
+  for (const p of projects) {
+    p.tech?.forEach((t) => countMap.set(t, (countMap.get(t) || 0) + 1))
+    p.tags?.forEach((t) => countMap.set(t, (countMap.get(t) || 0) + 1))
+  }
+  const topSkills = Array.from(countMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 16)
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">关于我</h1>
-        <PrintResumeButton />
-      </div>
+      <h1 className="text-2xl font-bold">关于我</h1>
 
-      <section className="prose dark:prose-invert">
+      <section className="prose dark:prose-invert [text-wrap:balance] [word-break:keep-all]">
         <p>
-          你好，我是 {siteConfig.author.name}
-          。我喜欢构建快速、可维护、对用户与搜索引擎都友好的产品体验。
+          你好，我是 {siteConfig.author.name}。理科出身，非科班，自学走到现在。
+          我更看重把事讲清楚、把系统做扎实：能跑得快，也要易维护、易扩展。
         </p>
         <p>
-          想要一份可打印的完整履历？前往{' '}
+          我会用 AI 提高效率，但不盲从。看不懂的东西，我会啃透它，再决定要不要用、怎么用。
+          写博客和整理知识库，就是把问题拆开、验证，然后沉淀成可复用的方法。
+        </p>
+        <p>
+          你可以在这里看到我做过的项目、学习笔记和一些实践记录。如果某篇文章或某个项目对你有帮助，也欢迎和我交流。
+          完整英文简历请见{' '}
           <a className="underline" href="/resume">
             /resume
           </a>
@@ -66,43 +61,22 @@ export default function AboutPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold">履历时间线</h2>
-        <ol className="relative border-l pl-4">
-          {timeline.map((t) => (
-            <li key={t.time} className="mb-6 ml-2">
-              <div className="absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full bg-primary" />
-              <time className="text-sm text-muted-foreground">{t.time}</time>
-              <div className="font-medium">{t.title}</div>
-              <div className="text-sm text-muted-foreground">{t.detail}</div>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-xl font-semibold">技能矩阵</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {skills.map((g) => (
-            <div key={g.name} className="rounded-lg border p-4">
-              <div className="mb-2 font-medium">{g.name}</div>
-              <div className="flex flex-wrap gap-2">
-                {g.items.map((i) => (
-                  <span
-                    key={i}
-                    className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
-                  >
-                    {i}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="prose dark:prose-invert">
-        <h2>下载简历</h2>
-        <p>点击右上角“打印 / 保存为 PDF”按钮，使用浏览器打印为 PDF，即可获得一份排版整齐的简历。</p>
+        <h2 className="mb-3 text-xl font-semibold">技能概览（基于项目）</h2>
+        {topSkills.length === 0 ? (
+          <div className="text-sm text-muted-foreground">暂无数据，请先添加一些项目。</div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {topSkills.map((s) => (
+              <span
+                key={s.name}
+                className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
+                title={`出现次数：${s.count}`}
+              >
+                {s.name}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
       <JsonLd data={person} />

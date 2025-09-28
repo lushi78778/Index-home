@@ -30,6 +30,32 @@ const nextConfig = {
     // 启用类型化路由，可以为内部链接提供更好的类型提示和自动补全
     typedRoutes: true,
   },
+  // 为了解决第三方 CDN（如语雀 cdn.nlark.com）基于 Referer 的防盗链导致的 403，
+  // 统一下发 Referrer-Policy: no-referrer，让浏览器在发起跨站资源请求时不携带 Referer。
+  // 这通常能绕开“denied by Referer ACL”。
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
+      },
+    ]
+  },
+  // 永久重定向：将旧的 /yuque 路径统一到 /blog，利于 SEO 与链接一致性
+  async redirects() {
+    return [
+      {
+        source: '/yuque',
+        destination: '/blog',
+        permanent: true,
+      },
+      {
+        source: '/yuque/:path*',
+        destination: '/blog/:path*',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 /**
@@ -96,9 +122,9 @@ const applyPlugins = (cfg) => {
           },
         },
       },
-      // 5. 第三方服务（如分析、评论）：后台更新策略
+      // 5. 第三方服务（分析）：后台更新策略
       {
-        urlPattern: /https:\/\/(plausible\.io|giscus\.app)\//,
+        urlPattern: /https:\/\/plausible\.io\//,
         handler: 'StaleWhileRevalidate',
         options: {
           cacheName: 'third-party-cache',

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
-import { getAllPosts, getAllProjects } from '@/lib/content'
+import { getAllProjects } from '@/lib/content'
+import { listAllPublicDocs } from '@/lib/yuque'
 
 export const revalidate = 3600 // 缓存 1 小时
 
@@ -18,19 +19,30 @@ function stripMarkdown(md?: string) {
 
 // 构建静态搜索索引：title/slug/type/excerpt/snippet/content(纯文本,裁剪)/tags
 export async function GET(req: Request) {
-  const posts = getAllPosts().map((p) => {
-    const text = stripMarkdown(p.content)
-    return {
-      id: `post:${p.slug}`,
-      title: p.title,
-      slug: p.slug,
-      excerpt: p.excerpt,
-      snippet: text.slice(0, 200),
-      content: text.slice(0, 1500), // 为命中窗口生成提供上下文，限制长度以控制体积
-      tags: p.tags,
-      type: 'post' as const,
-    }
-  })
+  const login = process.env.YUQUE_LOGIN || ''
+  const includeDrafts = process.env.YUQUE_INCLUDE_DRAFTS === 'true'
+
+  const postEntries = login
+    ? (await listAllPublicDocs(login, { includeDrafts })).map((it) => {
+        const text = `${it.doc.title} ${it.namespace}`
+        return {
+          id: `post:${it.namespace}/${it.doc.slug}`,
+          title: it.doc.title,
+          slug: `${it.namespace}/${it.doc.slug}`,
+          excerpt: it.repo || it.namespace,
+          snippet: text.slice(0, 200),
+          content: text.slice(0, 1500),
+          tags: [] as string[],
+          type: 'post' as const,
+          namespace: it.namespace,
+          createdAt: it.doc.created_at,
+          updatedAt: it.doc.updated_at,
+          wordCount: typeof it.doc.word_count === 'number' ? it.doc.word_count : undefined,
+          hits: typeof it.doc.hits === 'number' ? it.doc.hits : undefined,
+        }
+      })
+    : []
+
   const projects = getAllProjects().map((p) => {
     const text = stripMarkdown(p.content)
     return {
@@ -42,9 +54,10 @@ export async function GET(req: Request) {
       content: text.slice(0, 1500),
       tags: p.tags,
       type: 'project' as const,
+      createdAt: p.date,
     }
   })
-  const body = JSON.stringify([...posts, ...projects])
+  const body = JSON.stringify([...postEntries, ...projects])
   const etag = 'W/"' + crypto.createHash('sha1').update(body).digest('hex') + '"'
   const ifNoneMatch = req.headers.get('if-none-match')
   if (ifNoneMatch && ifNoneMatch === etag) {

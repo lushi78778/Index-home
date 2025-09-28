@@ -57,11 +57,22 @@ export const mdxComponents = {
           placeholder="blur"
           blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMScgaGVpZ2h0PScxJyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnLz4="
           sizes="(max-width: 768px) 100vw, 768px"
+          loading="lazy"
+          referrerPolicy="no-referrer"
         />
       )
     }
     // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} alt={props.alt || ''} className="rounded-md" />
+    return (
+      <img
+        {...props}
+        alt={props.alt || ''}
+        className="rounded-md"
+        loading={props.loading || 'lazy'}
+        decoding={(props as any).decoding || 'async'}
+        referrerPolicy={(props as any).referrerPolicy || 'no-referrer'}
+      />
+    )
   },
   table: (props: React.HTMLAttributes<HTMLTableElement>) => (
     <div className="my-4 w-full overflow-x-auto">

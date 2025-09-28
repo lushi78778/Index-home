@@ -10,7 +10,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
 import { z } from 'zod'
-import readingTime from 'reading-time'
 
 // 定义内容文件的根目录
 const CONTENT_DIR = path.join(process.cwd(), 'content')
@@ -22,29 +21,6 @@ const zDateString = z
   .transform((v) => (typeof v === 'string' ? v : v.toISOString()))
 
 // --- 内容模型定义 (Schemas) ---
-
-/**
- * 文章 (Post) 的 Zod Schema
- * 定义了文章 frontmatter 的数据结构和校验规则。
- */
-export const PostSchema = z.object({
-  title: z.string({ required_error: '标题 (title) 是必填项' }),
-  slug: z.string(), // slug 将从文件名自动生成，此处仅为类型定义
-  date: zDateString, // 发布日期
-  updated: zDateString.optional(), // 可选的更新日期
-  excerpt: z.string().optional(), // 可选的文章摘要
-  cover: z.string().optional(), // 可选的封面图片 URL
-  tags: z.array(z.string()).default([]), // 标签数组
-  readingTime: z.number().optional(), // 阅读时间（分钟），将自动计算
-  draft: z.boolean().default(false), // 是否为草稿
-  canonicalUrl: z.string().url().optional(), // 可选的规范链接，用于 SEO
-  ogImage: z.string().optional(), // 可选的 Open Graph 图片 URL
-  series: z.string().optional(), // 所属系列
-  lang: z.string().default('zh'), // 内容语言
-})
-
-// 从 Zod Schema 推断出 TypeScript 类型，并添加 content 字段
-export type Post = z.infer<typeof PostSchema> & { content: string }
 
 /**
  * 项目 (Project) 的 Zod Schema
@@ -71,17 +47,6 @@ export type Project = z.infer<typeof ProjectSchema> & { content?: string }
 /**
  * 笔记/书签 (Note/Bookmark) 的 Zod Schema
  */
-export const NoteSchema = z.object({
-  title: z.string(),
-  slug: z.string(),
-  url: z.string().url().optional(), // 如果是书签，则有外部链接
-  date: zDateString,
-  tags: z.array(z.string()).default([]),
-  summary: z.string().optional(),
-  kind: z.enum(['note', 'bookmark']).default('note'), // 类型：笔记或书签
-})
-export type Note = z.infer<typeof NoteSchema> & { content?: string }
-
 // --- 文件读取与解析工具 ---
 
 /**
@@ -92,10 +57,24 @@ export type Note = z.infer<typeof NoteSchema> & { content?: string }
 function readContentFiles(dir: string): string[] {
   const absolutePath = path.join(CONTENT_DIR, dir)
   if (!fs.existsSync(absolutePath)) return []
-  return fs
-    .readdirSync(absolutePath)
-    .filter((f) => f.endsWith('.md') || f.endsWith('.mdx'))
-    .map((f) => path.join(absolutePath, f))
+
+  const files: string[] = []
+  const walk = (current: string) => {
+    const entries = fs.readdirSync(current, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name)
+      if (entry.isDirectory()) {
+        walk(fullPath)
+        continue
+      }
+      if (entry.name.endsWith('.md') || entry.name.endsWith('.mdx')) {
+        files.push(fullPath)
+      }
+    }
+  }
+
+  walk(absolutePath)
+  return files
 }
 
 /**
@@ -139,9 +118,7 @@ function parseFile<T extends z.ZodTypeAny>(
 // --- 内存缓存实现 ---
 
 type FileMark = { p: string; mtimeMs: number }
-let postsCache: { files: FileMark[]; items: Post[] } | null = null
 let projectsCache: { files: FileMark[]; items: Project[] } | null = null
-let notesCache: { files: FileMark[]; items: Note[] } | null = null
 
 /**
  * 比较两组文件标记是否完全相同。
@@ -163,40 +140,6 @@ function areFileMarksEqual(a: FileMark[], b: FileMark[]): boolean {
  * @param {boolean} [options.includeDraft=isDev] - 是否包含草稿。开发环境默认包含。
  * @returns {Post[]} - 按日期降序排列的文章数组。
  */
-export function getAllPosts({
-  includeDraft = process.env.NODE_ENV === 'development',
-} = {}): Post[] {
-  const currentMarks = listWithMtime('posts')
-
-  // 如果缓存不存在或文件已变更，则重新解析所有文章
-  if (!postsCache || !areFileMarksEqual(postsCache.files, currentMarks)) {
-    const posts = currentMarks.map(({ p: filePath }) => {
-      const { meta, content } = parseFile(filePath, PostSchema)
-      const rt = readingTime(content)
-      // 自动计算并注入阅读时间
-      return { ...meta, readingTime: Math.ceil(rt.minutes), content }
-    })
-    postsCache = { files: currentMarks, items: posts }
-  }
-
-  const allPosts = postsCache.items
-
-  // 根据选项过滤草稿和未到发布日期的文章
-  const filtered = includeDraft
-    ? allPosts
-    : allPosts.filter((p) => !p.draft && new Date(p.date).getTime() <= Date.now())
-
-  return filtered.sort((a, b) => +new Date(b.date) - +new Date(a.date))
-}
-
-/**
- * 根据 slug 获取单篇文章。
- */
-export function getPostBySlug(slug: string, opts?: { includeDraft?: boolean }): Post | null {
-  const all = getAllPosts(opts)
-  return all.find((p) => p.slug === slug) || null
-}
-
 /**
  * 获取所有项目。
  */
@@ -213,30 +156,11 @@ export function getAllProjects(): Project[] {
 }
 
 /**
- * 获取所有笔记/书签。
- */
-export function getAllNotes(): Note[] {
-  const currentMarks = listWithMtime('notes')
-  if (!notesCache || !areFileMarksEqual(notesCache.files, currentMarks)) {
-    const items = currentMarks.map(({ p: filePath }) => {
-      const { meta, content } = parseFile(filePath, NoteSchema)
-      return { ...meta, content }
-    })
-    notesCache = { files: currentMarks, items }
-  }
-  return notesCache.items.sort((a, b) => +new Date(b.date) - +new Date(a.date))
-}
-
-/**
  * 聚合所有文章和项目的标签，并计算每个标签下的内容数量。
  * @returns {{ tag: string; count: number }[]} - 按数量降序排列的标签数组。
  */
 export function getAllTags() {
   const tagCount = new Map<string, number>()
-
-  getAllPosts({ includeDraft: false }).forEach((p) => {
-    p.tags.forEach((t) => tagCount.set(t, (tagCount.get(t) || 0) + 1))
-  })
 
   getAllProjects().forEach((pj) => {
     pj.tags.forEach((t) => tagCount.set(t, (tagCount.get(t) || 0) + 1))

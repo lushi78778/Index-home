@@ -73,15 +73,15 @@ export function middleware(req: NextRequest) {
   // 这是一个白名单机制，只允许从指定的来源加载资源。
   const cspDirectives = [
     "default-src 'self'", // 默认策略：只信任同源内容。
-    // 脚本来源：允许同源、Plausible 和 Giscus 的脚本。
+    // 脚本来源：允许同源与 Plausible 的脚本。
     // 在生产环境使用 nonce 来增强内联脚本的安全性。
     // 在开发环境允许 'unsafe-eval' 以支持 React Refresh 等功能。
-    `script-src 'self' 'nonce-${nonce}' https://plausible.io https://giscus.app ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''}`,
+    `script-src 'self' 'nonce-${nonce}' https://plausible.io ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'", // 样式来源：允许同源和内联样式。
     "img-src 'self' data: https:", // 图片来源：允许同源、data URI 和所有 https 来源。
     "font-src 'self' data:", // 字体来源：允许同源和 data URI。
-    "connect-src 'self' https://plausible.io https://giscus.app", // 允许同源、Plausible 与 giscus。
-    "frame-src 'self' https://giscus.app", // Iframe 来源：允许嵌入 Giscus 评论。
+    "connect-src 'self' https://plausible.io", // 允许同源与 Plausible。
+    // 已移除 Giscus 的 frame 允许列表
     "frame-ancestors 'none'", // 禁止页面被嵌入到其他网站的 iframe 中。
     "form-action 'self'", // 表单提交目标：只允许提交到同源。
     "base-uri 'self'", // 限制 `<base>` 标签的 URL。
@@ -94,7 +94,9 @@ export function middleware(req: NextRequest) {
   // 将安全头设置到响应对象上。
   res.headers.set('x-nonce', nonce) // 将 nonce 传递给下游组件（如 app/layout.tsx）。
   res.headers.set('Content-Security-Policy', csp)
-  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  // 语雀等第三方图片 CDN（cdn.nlark.com）会基于 Referer 做 ACL，
+  // 统一使用 no-referrer，防止跨站图片请求被 403 Forbidden。
+  res.headers.set('Referrer-Policy', 'no-referrer')
   res.headers.set('X-Content-Type-Options', 'nosniff')
   res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
   res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')

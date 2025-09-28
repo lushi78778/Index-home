@@ -40,6 +40,9 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.shortName}`, // 页面标题模板
   },
   description: siteConfig.description,
+  // 对于启用了基于 Referer 的 CDN 防盗链（如 Yuque 的 cdn.nlark.com），
+  // 建议在前端也声明不发送 referrer，避免跨站资源 403。
+  referrer: 'no-referrer',
   openGraph: {
     // Open Graph (用于社交分享，如 Facebook, LinkedIn)
     title: siteConfig.name,
@@ -170,8 +173,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                       { '@type': 'WebPage', name: '联系', url: `${siteConfig.url}/contact` },
                       { '@type': 'WebPage', name: '订阅', url: `${siteConfig.url}/subscribe` },
                       { '@type': 'WebPage', name: '搜索', url: `${siteConfig.url}/search` },
-                      { '@type': 'WebPage', name: 'Now', url: `${siteConfig.url}/now` },
-                      { '@type': 'WebPage', name: 'Uses', url: `${siteConfig.url}/uses` },
                     ],
                   }}
                 />

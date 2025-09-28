@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import { siteConfig } from '@/config/site'
 import { PrintResumeButton } from '@/components/site/print-resume'
+import { getAllProjects } from '@/lib/content'
 import { JsonLd } from '@/components/site/json-ld'
 
 export const metadata: Metadata = {
-  title: '简历',
-  description: '个人履历与技能概览，可直接打印或保存为 PDF。',
+  title: 'Resume',
+  description: 'Profile, experience and skills. Printable version available.',
   alternates: { canonical: `${siteConfig.url}/resume` },
 }
 
@@ -23,31 +24,34 @@ export default function ResumePage() {
   const experiences = [
     {
       company: siteConfig.shortName,
-      role: '全栈工程师 / 技术负责人',
-      period: '2024 - 至今',
+      role: 'Full‑stack Engineer / Tech Lead',
+      period: '2024 – Present',
       bullets: [
-        '负责 Next.js 平台与组件系统建设，推动性能优化与工程效率提升',
-        '实践 Edge / ISR / RSC，沉淀稳定的内容工作流与 SEO 方案',
+        'Own the Next.js platform and component system; drive performance and DX improvements',
+        'Practice Edge / ISR / RSC for content workflows with solid SEO',
       ],
     },
+  ]
+
+  const education = [
     {
-      company: '某互联网公司',
-      role: '前端工程师',
-      period: '2022 - 2024',
-      bullets: [
-        '主导设计系统与可访问性规范，Lighthouse > 95',
-        '建设 E2E/单测/CI 流水线，降低回归风险',
-      ],
+      school: 'Science background (non-CS major)',
+      degree: 'Self‑taught in CS topics',
+      period: 'Ongoing',
     },
   ]
 
-  const education = [{ school: '某大学', degree: '计算机科学', period: '2018 - 2022' }]
-
-  const skills = [
-    { name: 'Web / Framework', items: ['Next.js', 'React', 'Node.js', 'Vite'] },
-    { name: 'Language', items: ['TypeScript', 'JavaScript', 'SQL'] },
-    { name: 'Infra', items: ['Vercel', 'Cloudflare', 'Docker', 'GitHub Actions'] },
-  ]
+  // Derive a compact skills list from projects (tech + tags)
+  const projects = getAllProjects()
+  const countMap = new Map<string, number>()
+  for (const p of projects) {
+    p.tech?.forEach((t) => countMap.set(t, (countMap.get(t) || 0) + 1))
+    p.tags?.forEach((t) => countMap.set(t, (countMap.get(t) || 0) + 1))
+  }
+  const topSkills = Array.from(countMap.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20)
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -55,31 +59,42 @@ export default function ResumePage() {
         <div>
           <h1 className="text-3xl font-bold">{siteConfig.author.name}</h1>
           <div className="text-sm text-muted-foreground">
-            <a
-              className="underline"
-              href={siteConfig.social.github}
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub
-            </a>
-            {` · `}
-            <a
-              className="underline"
-              href={siteConfig.social.twitter}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Twitter
-            </a>
-            {siteConfig.social.email ? (
-              <>
-                {` · `}
-                <a className="underline" href={`mailto:${siteConfig.social.email}`}>
+            {[
+              siteConfig.social?.github && (
+                <a
+                  key="gh"
+                  className="underline"
+                  href={siteConfig.social.github}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  GitHub
+                </a>
+              ),
+              siteConfig.social?.twitter && (
+                <a
+                  key="tw"
+                  className="underline"
+                  href={siteConfig.social.twitter}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Twitter
+                </a>
+              ),
+              siteConfig.social?.email && (
+                <a key="mail" className="underline" href={`mailto:${siteConfig.social.email}`}>
                   {siteConfig.social.email}
                 </a>
-              </>
-            ) : null}
+              ),
+            ]
+              .filter(Boolean)
+              .map((el, idx, arr) => (
+                <span key={idx}>
+                  {el}
+                  {idx < arr.length - 1 ? ' · ' : ''}
+                </span>
+              ))}
           </div>
         </div>
         <div className="no-print">
@@ -88,18 +103,19 @@ export default function ResumePage() {
       </div>
 
       <section>
-        <h2 className="mb-2 text-xl font-semibold">概述</h2>
+        <h2 className="mb-2 text-xl font-semibold">Summary</h2>
         <p className="text-sm text-muted-foreground">
-          专注于 Web 平台与工程效率的全栈工程师，擅长 Next.js / TypeScript /
-          边缘计算与内容平台，重视可访问性与 SEO。
+          Science background, self‑taught into web development. Focused on Next.js & TypeScript,
+          performance, accessibility and maintainability. I leverage AI for productivity while
+          keeping a solid understanding of the fundamentals.
         </p>
       </section>
 
       <section>
-        <h2 className="mb-2 text-xl font-semibold">经历</h2>
+        <h2 className="mb-2 text-xl font-semibold">Experience</h2>
         <div className="space-y-4">
           {experiences.map((e) => (
-            <div key={e.company} className="rounded-lg border p-4">
+            <div key={`${e.company}-${e.period}`} className="rounded-lg border p-4">
               <div className="flex items-baseline justify-between">
                 <div className="font-medium">
                   {e.company} · {e.role}
@@ -117,35 +133,33 @@ export default function ResumePage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-xl font-semibold">教育</h2>
+        <h2 className="mb-2 text-xl font-semibold">Education</h2>
         <ul className="list-disc pl-5 text-sm text-muted-foreground">
           {education.map((ed) => (
             <li key={ed.school}>
-              {ed.school} · {ed.degree}（{ed.period}）
+              {ed.school} · {ed.degree} ({ed.period})
             </li>
           ))}
         </ul>
       </section>
 
       <section>
-        <h2 className="mb-2 text-xl font-semibold">技能</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {skills.map((g) => (
-            <div key={g.name} className="rounded-lg border p-4">
-              <div className="mb-2 font-medium">{g.name}</div>
-              <div className="flex flex-wrap gap-2">
-                {g.items.map((i) => (
-                  <span
-                    key={i}
-                    className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
-                  >
-                    {i}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <h2 className="mb-2 text-xl font-semibold">Skills</h2>
+        {topSkills.length === 0 ? (
+          <div className="text-sm text-muted-foreground">No data yet. Add some projects.</div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {topSkills.map((s) => (
+              <span
+                key={s.name}
+                className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
+                title={`Occurrences: ${s.count}`}
+              >
+                {s.name}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
       <JsonLd data={person} />
@@ -154,8 +168,8 @@ export default function ResumePage() {
           '@context': 'https://schema.org',
           '@type': 'BreadcrumbList',
           itemListElement: [
-            { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
-            { '@type': 'ListItem', position: 2, name: '简历', item: `${siteConfig.url}/resume` },
+            { '@type': 'ListItem', position: 1, name: 'Home', item: siteConfig.url },
+            { '@type': 'ListItem', position: 2, name: 'Resume', item: `${siteConfig.url}/resume` },
           ],
         }}
       />

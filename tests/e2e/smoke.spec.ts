@@ -15,9 +15,9 @@ test('home → blog → post smoke + a11y (basic)', async ({ page }) => {
   const blogAX = await page.accessibility.snapshot({ interestingOnly: true })
   expect(blogAX?.name ?? '').not.toMatch(/error/i)
 
-  const firstPost = page.locator('ul li a[href^="/blog/"]').first()
+  const firstPost = page.locator('a[href^="/blog/"]').first()
   await expect(firstPost).toBeVisible()
-  await Promise.all([page.waitForURL(/\/blog\/[\w-]+$/), firstPost.click()])
+  await Promise.all([page.waitForURL((url) => /\/blog\//.test(url.pathname)), firstPost.click()])
   await expect(page.locator('article')).toBeVisible()
   const postAX = await page.accessibility.snapshot({ interestingOnly: true })
   expect(postAX?.name ?? '').not.toMatch(/error/i)

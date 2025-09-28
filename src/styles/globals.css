@@ -95,3 +95,8 @@
     font-size: 0.85em;
   }
 }
+
+/* 文章锚点滚动优化：为标题添加 scroll-margin-top，避免被粘性头部覆盖 */
+.prose :where(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: 5rem; /* 约等于 Header 高度 + 内边距 */
+}

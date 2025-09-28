@@ -9,6 +9,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      'server-only': path.resolve(__dirname, 'tests/mocks/server-only.ts'),
       '@/components': path.resolve(__dirname, 'src/components'),
       '@/lib': path.resolve(__dirname, 'src/lib'),
       '@/config': path.resolve(__dirname, 'src/config'),

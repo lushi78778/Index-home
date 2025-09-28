@@ -1,156 +1,238 @@
+import { listAllPublicDocs, listUserPublicRepos, listRepoToc, buildTocTree } from '@/lib/yuque'
+import BlogGroupsPersist from '@/components/site/blog-groups-persist'
 import Link from 'next/link'
-import type { Metadata } from 'next'
-import { getAllPosts } from '@/lib/content'
-import { siteConfig } from '@/config/site'
-import { Pagination } from '@/components/ui/pagination'
-import { redirect } from 'next/navigation'
-import { BLOG_PAGE_SIZE } from '@/config/constants'
-import { JsonLd } from '@/components/site/json-ld'
+import { formatDateTime } from '@/lib/datetime'
 
-export async function generateMetadata({
-  searchParams,
-}: {
-  searchParams: { page?: string; pageSize?: string; tag?: string; q?: string }
-}): Promise<Metadata> {
-  const hasFilter = !!(searchParams?.tag?.trim() || searchParams?.q?.trim())
-  return {
-    title: '博客',
-    description: '文章列表：分页、标签筛选、搜索入口。',
-    alternates: { canonical: `${siteConfig.url}/blog` },
-    robots: hasFilter ? { index: false, follow: true } : undefined,
-  }
-}
+export const revalidate = 60 * 10
 
-// 文章列表页
-// - 支持分页：?page=1（每页大小由常量 BLOG_PAGE_SIZE 控制）
-// - 支持标签筛选：?tag=xxx
-// - 可扩展搜索：?q=关键词（当前示例未启用全文搜索）
-export default function BlogIndex({
-  searchParams,
-}: {
-  searchParams: { page?: string; pageSize?: string; tag?: string; q?: string }
-}) {
-  const page = Math.max(1, Number(searchParams.page || '1'))
-  const pageSize = BLOG_PAGE_SIZE
-  const tag = searchParams.tag?.trim()
-  const q = searchParams.q?.trim().toLowerCase()
+export default async function BlogIndex() {
+  const login = process.env.YUQUE_LOGIN || ''
+  const includeDrafts = process.env.YUQUE_INCLUDE_DRAFTS === 'true'
+  const [items, repos] = login
+    ? [await listAllPublicDocs(login, { includeDrafts }), await listUserPublicRepos(login)]
+    : [[], []]
 
-  // 统一分页路径：将 /blog?page=n 重定向到 /blog/page/n，并保留筛选查询串
-  if (searchParams.page && page > 1) {
-    const base = `/blog/page/${page}`
-    const qs = new URLSearchParams()
-    if (tag) qs.set('tag', tag)
-    if (q) qs.set('q', q)
-    const target = qs.size ? `${base}?${qs.toString()}` : base
-    redirect(target)
+  // 按知识库（namespace）分组
+  const repoMap = new Map<string, any>()
+  for (const r of repos as any[]) repoMap.set(r.namespace, r)
+
+  const groups = new Map<string, { namespace: string; repo?: any; docs: typeof items }>()
+  for (const it of items) {
+    const ns = it.namespace
+    if (!groups.has(ns)) groups.set(ns, { namespace: ns, repo: repoMap.get(ns), docs: [] as any })
+    groups.get(ns)!.docs.push(it)
   }
 
-  // 获取文章集合，构建期读取，生产环境可配合 ISR
-  let posts = getAllPosts()
+  // 将分组转为数组，并按“该知识库最近更新的文档时间”倒序
+  let grouped = Array.from(groups.values())
+    .map((g) => ({
+      ...g,
+      docs: g.docs.sort((a, b) => +new Date(b.doc.updated_at) - +new Date(a.doc.updated_at)),
+      latest: g.docs.length ? g.docs[0].doc.updated_at : '1970-01-01',
+    }))
+    .sort((a, b) => +new Date(b.latest) - +new Date(a.latest))
 
-  // 标签筛选
-  if (tag) posts = posts.filter((p) => p.tags.includes(tag))
+  // 将指定组（login/blog）置顶
+  const pinNs = login ? `${login}/blog` : ''
+  if (pinNs) {
+    const idx = grouped.findIndex((g) => g.namespace === pinNs)
+    if (idx > 0) {
+      const [pinned] = grouped.splice(idx, 1)
+      grouped = [pinned, ...grouped]
+    }
+  }
 
-  // 关键词简易筛选（可替换为客户端索引或服务端搜索）
-  if (q)
-    posts = posts.filter(
-      (p) => p.title.toLowerCase().includes(q) || p.excerpt?.toLowerCase().includes(q),
-    )
-
-  const total = posts.length
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  const current = Math.min(page, totalPages)
-  const start = (current - 1) * pageSize
-  const pagePosts = posts.slice(start, start + pageSize)
-
+  const defaultOpenNamespace = login ? `${login}/blog` : undefined
+  const whitelist = (process.env.BLOG_DEFAULT_OPEN_WHITELIST || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const defaultOpenSet = new Set<string>([
+    ...(defaultOpenNamespace ? [defaultOpenNamespace] : []),
+    ...whitelist,
+  ])
   return (
-    <div className="space-y-6">
-      {/* rel next for the first page when there are more pages */}
-      {current < totalPages && !tag && !q && (
-        <link rel="next" href={`${siteConfig.url}/blog/page/${current + 1}`} />
+    <div>
+      <h1 className="mb-4 text-2xl font-semibold">博客</h1>
+      {!login && (
+        <p className="text-sm text-muted-foreground">未配置 YUQUE_LOGIN，无法列出公开文档。</p>
       )}
-      <h1 className="text-2xl font-bold">博客</h1>
-      {/* 可选：当存在 q 等非规范筛选时，可考虑添加 robots noindex
-      {q && <meta name="robots" content="noindex,follow" />} */}
-
-      {/* 过滤提示 */}
-      <div className="text-sm text-muted-foreground">
-        {tag ? (
-          <span>
-            标签 <span className="font-medium">{tag}</span> · 共 {total} 篇
-          </span>
-        ) : (
-          <span>共 {total} 篇文章</span>
+      {login && items.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          未发现公开文档。请检查：语雀知识库与文档是否公开、YUQUE_TOKEN 是否有效、或稍后再试。
+        </p>
+      )}
+      {grouped.length > 1 && (
+        <nav className="mb-4 flex flex-wrap gap-2 text-sm">
+          {grouped.map((g) => {
+            const id = `ns-${g.namespace.replace(/[^a-zA-Z0-9_-]+/g, '-')}`
+            return (
+              <a
+                key={g.namespace}
+                href={`#${id}`}
+                className="rounded border px-2 py-1 hover:bg-accent"
+              >
+                {g.repo?.name || g.namespace.split('/')[1]} ({g.docs.length})
+              </a>
+            )
+          })}
+        </nav>
+      )}
+      {/* 客户端持久化展开状态（localStorage） */}
+      {process.env.BLOG_REMEMBER_OPEN !== 'false' && (
+        <BlogGroupsPersist storageKey="blog-open-groups-v1" />
+      )}
+      <div className="space-y-6">
+        {await Promise.all(
+          grouped.map(async (g) => {
+            const id = `ns-${g.namespace.replace(/[^a-zA-Z0-9_-]+/g, '-')}`
+            const open = defaultOpenSet.has(g.namespace)
+            // 获取该知识库目录结构
+            const tocRaw = await listRepoToc(g.namespace, { repoId: g.repo?.id })
+            const tocTree = buildTocTree(tocRaw)
+            return (
+              <section key={g.namespace} id={id} className="rounded-md border p-2">
+                <details className="group" data-ns={g.namespace} {...(open ? { open: true } : {})}>
+                  <summary className="cursor-pointer list-none px-2 py-2 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-muted-foreground">{g.namespace}</div>
+                      <h2 className="text-lg font-medium">
+                        {g.repo?.name || g.namespace.split('/')[1]}{' '}
+                        <span className="text-sm text-muted-foreground">({g.docs.length})</span>
+                      </h2>
+                      {g.repo?.description && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {g.repo.description}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-muted-foreground text-sm">&nbsp;</span>
+                  </summary>
+                  <div className="p-2">
+                    {tocTree.length > 0 ? (
+                      <TocList
+                        namespace={g.namespace}
+                        nodes={tocTree}
+                        stats={new Map(g.docs.map((it) => [it.doc.slug, it]))}
+                      />
+                    ) : (
+                      <ul className="space-y-2">
+                        {g.docs.map((it) => (
+                          <li key={`${it.namespace}/${it.doc.slug}`} className="rounded border p-3">
+                            <Link
+                              className="text-base underline"
+                              href={`/blog/${it.namespace}/${it.doc.slug}` as any}
+                            >
+                              {it.doc.title}
+                            </Link>
+                            <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-2">
+                              <span>发布 {formatDateTime(it.doc.created_at)}</span>
+                              {it.doc.updated_at && it.doc.updated_at !== it.doc.created_at && (
+                                <span className="text-muted-foreground/70">
+                                  更新 {formatDateTime(it.doc.updated_at)}
+                                </span>
+                              )}
+                              {typeof it.doc.word_count === 'number' && (
+                                <span>{it.doc.word_count} 字</span>
+                              )}
+                              {typeof it.doc.hits === 'number' && <span>{it.doc.hits} 次浏览</span>}
+                              {typeof it.doc.likes_count === 'number' && (
+                                <span>{it.doc.likes_count} 喜欢</span>
+                              )}
+                              {typeof it.doc.comments_count === 'number' && (
+                                <span>{it.doc.comments_count} 评论</span>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </details>
+              </section>
+            )
+          }),
         )}
       </div>
-
-      {/* 列表 */}
-      <ul className="space-y-4">
-        {pagePosts.map((p) => (
-          <li key={p.slug} className="rounded-lg border p-4">
-            <Link className="text-lg font-medium underline" href={`/blog/${p.slug}` as any}>
-              {p.title}
-            </Link>
-            <div className="mt-1 text-sm text-muted-foreground">
-              {new Date(p.date).toLocaleDateString()} · {p.readingTime} 分钟
-            </div>
-            {p.excerpt && <p className="mt-2 text-sm">{p.excerpt}</p>}
-            {p.tags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {p.tags.map((t) => (
-                  <Link
-                    key={t}
-                    href={`/blog?tag=${encodeURIComponent(t)}` as any}
-                    className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground hover:opacity-90"
-                  >
-                    #{t}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      {/* 分页 */}
-      <Pagination
-        current={current}
-        total={totalPages}
-        basePath="/blog"
-        buildHref={(n) => {
-          const base = `/blog/page/${n}`
-          if (tag) return `${base}?tag=${encodeURIComponent(tag)}`
-          return base
-        }}
-      />
-
-      {/* 结构化数据：当前页文章列表 ItemList + 面包屑 */}
-      {pagePosts.length > 0 && (
-        <JsonLd
-          data={{
-            '@context': 'https://schema.org',
-            '@type': 'ItemList',
-            name: current > 1 ? `博客 - 第 ${current} 页` : '博客',
-            itemListElement: pagePosts.map((p, i) => ({
-              '@type': 'ListItem',
-              position: i + 1 + (current - 1) * pageSize,
-              name: p.title,
-              url: `${siteConfig.url}/blog/${p.slug}`,
-            })),
-            numberOfItems: pagePosts.length,
-          }}
-        />
-      )}
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'BreadcrumbList',
-          itemListElement: [
-            { '@type': 'ListItem', position: 1, name: '首页', item: siteConfig.url },
-            { '@type': 'ListItem', position: 2, name: '博客', item: `${siteConfig.url}/blog` },
-          ],
-        }}
-      />
     </div>
+  )
+}
+
+function TocList({
+  namespace,
+  nodes,
+  stats,
+}: {
+  namespace: string
+  nodes: ReturnType<typeof buildTocTree>
+  stats: Map<string, any>
+}) {
+  return (
+    <ul className="space-y-2">
+      {nodes.map((n) => (
+        <li key={n.uuid || n.title}>
+          {(() => {
+            const hasChildren = !!(n.children && n.children.length)
+            const slugFromUrl = (n.url || '').split('/').filter(Boolean).slice(-1)[0]
+            const finalSlug = (n.slug || slugFromUrl || '').trim()
+            const isDocLike = ['DOC', 'Mind'].includes(String(n.type || '')) || !!finalSlug
+            // 有子节点时优先当“分组”展开
+            if (hasChildren) {
+              return (
+                <details className="mt-2" open>
+                  <summary className="font-medium text-sm cursor-pointer select-none">
+                    {n.title}
+                  </summary>
+                  <div className="ml-4 border-l pl-3 mt-2">
+                    <TocList namespace={namespace} nodes={n.children!} stats={stats} />
+                  </div>
+                </details>
+              )
+            }
+            // 仅在没有子节点时才当文档渲染
+            if (isDocLike && finalSlug) {
+              const info = n.slug ? (stats.get(n.slug) as any) : undefined
+              const doc = info?.doc ?? {}
+              const views = typeof doc.read_count === 'number' ? doc.read_count : doc.hits
+              return (
+                <div className="rounded border px-3 py-2 flex items-center justify-between hover:bg-accent/30 transition-colors">
+                  <Link
+                    className="max-w-[70%] truncate underline"
+                    href={`/blog/${namespace}/${finalSlug}` as any}
+                    title={n.title}
+                  >
+                    {n.title}
+                  </Link>
+                  {(doc.created_at ||
+                    doc.updated_at ||
+                    typeof doc.word_count === 'number' ||
+                    typeof views === 'number' ||
+                    typeof doc.likes_count === 'number' ||
+                    typeof doc.comments_count === 'number') && (
+                    <div className="shrink-0 text-xs text-muted-foreground flex flex-wrap gap-2 justify-end">
+                      {doc.created_at && <span>发布 {formatDateTime(doc.created_at)}</span>}
+                      {doc.updated_at && doc.updated_at !== doc.created_at && (
+                        <span className="text-muted-foreground/70">
+                          更新 {formatDateTime(doc.updated_at)}
+                        </span>
+                      )}
+                      {typeof doc.word_count === 'number' && <span>{doc.word_count} 字</span>}
+                      {typeof views === 'number' && <span>{views} 次浏览</span>}
+                      {doc.type === 'Mind' && <span>思维导图</span>}
+                      {typeof doc.likes_count === 'number' && <span>{doc.likes_count} 喜欢</span>}
+                      {typeof doc.comments_count === 'number' && (
+                        <span>{doc.comments_count} 评论</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+            // 兜底：无 slug/url 且无 children 的占位，直接跳过
+            return null
+          })()}
+        </li>
+      ))}
+    </ul>
   )
 }

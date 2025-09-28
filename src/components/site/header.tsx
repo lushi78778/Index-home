@@ -26,8 +26,6 @@ export function Header() {
     { href: `/blog`, label: t('nav.blog') },
     { href: `/projects`, label: t('nav.projects') },
     { href: `/about`, label: t('nav.about') },
-    { href: `/now`, label: t('nav.now') },
-    { href: `/uses`, label: t('nav.uses') },
   ]
   const router = useRouter()
   const [q, setQ] = useState('')

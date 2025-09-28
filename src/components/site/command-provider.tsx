@@ -1,19 +1,20 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import MiniSearch from 'minisearch'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { buildSnippet, createMiniSearch, getHighlightSegments, type SearchDoc } from '@/lib/search'
+import { formatDateTime } from '@/lib/datetime'
 
-type Doc = {
-  id: string
+type YuqueSearchItem = {
+  id: number
+  type: string
   title: string
-  slug: string
-  type: 'post' | 'project'
-  excerpt?: string
-  snippet?: string
-  content?: string
-  tags?: string[]
+  summary?: string
+  url?: string
+  book?: { namespace?: string }
+  doc?: { slug?: string }
+  updated_at?: string
 }
 
 type Ctx = {
@@ -33,22 +34,15 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
   const t = useTranslations()
   const [visible, setVisible] = useState(false)
   const [query, setQuery] = useState('')
-  const [docs, setDocs] = useState<Doc[]>([])
+  const [docs, setDocs] = useState<SearchDoc[]>([])
   const [active, setActive] = useState(0)
-  const mini = useMemo(
-    () =>
-      new MiniSearch<Doc>({
-        fields: ['title', 'excerpt', 'snippet', 'content', 'tags'],
-        storeFields: ['title', 'slug', 'type', 'excerpt', 'snippet', 'content'],
-        searchOptions: { prefix: true, fuzzy: 0.2 },
-      }),
-    [],
-  )
+  const mini = useMemo(() => createMiniSearch(), [])
 
+  // 拉取构建期生成的静态索引文件，一次性灌入 MiniSearch
   useEffect(() => {
     fetch('/api/search-index')
       .then((r) => r.json())
-      .then((data: Doc[]) => {
+      .then((data: SearchDoc[]) => {
         setDocs(data)
         mini.addAll(data)
       })
@@ -73,9 +67,48 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
     [],
   )
 
-  const results = query
-    ? mini.search(query).map((r) => r as any as Doc & { id: string })
-    : docs.slice(0, 10)
+  const [yuqueItems, setYuqueItems] = useState<YuqueSearchItem[] | null>(null)
+
+  useEffect(() => {
+    let aborted = false
+    const q = query.trim()
+    if (!q) {
+      setYuqueItems(null)
+      return
+    }
+    fetch(`/api/yuque-search?q=${encodeURIComponent(q)}&limit=20`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (aborted) return
+        const arr = Array.isArray(json?.data) ? (json.data as YuqueSearchItem[]) : []
+        setYuqueItems(arr)
+      })
+      .catch(() => setYuqueItems(null))
+    return () => {
+      aborted = true
+    }
+  }, [query])
+
+  const results: SearchDoc[] = (() => {
+    const q = query.trim()
+    if (!q) return docs.slice(0, 10)
+    if (yuqueItems && yuqueItems.length) {
+      return yuqueItems.map((it) => {
+        const ns = it.book?.namespace || ''
+        const slug = it.doc?.slug || (it.url ? it.url.split('/').filter(Boolean).slice(-1)[0] : '')
+        return {
+          id: String(it.id),
+          title: it.title,
+          slug: ns && slug ? `${ns}/${slug}` : slug,
+          type: 'post' as const,
+          snippet: it.summary || '',
+          namespace: ns || undefined,
+          updatedAt: it.updated_at || undefined,
+        }
+      })
+    }
+    return mini.search(q).map((hit) => hit as unknown as SearchDoc)
+  })()
 
   // keyboard navigation for results
   useEffect(() => {
@@ -103,45 +136,20 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
     setActive(0)
   }, [query])
 
-  function highlight(text: string) {
-    const q = query.trim()
-    if (!q) return text
-    try {
-      const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig')
-      return (
-        <>
-          {text.split(re).map((part, i) =>
-            re.test(part) ? (
-              <mark key={i} className="bg-yellow-200 dark:bg-yellow-700 text-foreground">
-                {part}
-              </mark>
-            ) : (
-              <span key={i}>{part}</span>
-            ),
-          )}
-        </>
-      )
-    } catch {
-      return text
-    }
-  }
-
-  function buildSnippet(d: Doc): string | undefined {
-    if (d.excerpt) return d.excerpt
-    const text = d.content || d.snippet
-    if (!text) return undefined
-    const q = query.trim()
-    if (!q) return d.snippet || text.slice(0, 160)
-    const lower = text.toLowerCase()
-    const idx = lower.indexOf(q.toLowerCase())
-    if (idx === -1) return d.snippet || text.slice(0, 160)
-    const window = 120
-    const start = Math.max(0, idx - window / 2)
-    const end = Math.min(text.length, idx + q.length + window / 2)
-    const prefix = start > 0 ? '…' : ''
-    const suffix = end < text.length ? '…' : ''
-    return `${prefix}${text.slice(start, end).trim()}${suffix}`
-  }
+  // 统一的高亮渲染逻辑，维持搜索页与命令面板的视觉一致性
+  const renderHighlight = useCallback(
+    (text: string) =>
+      getHighlightSegments(text, query).map((segment, index) =>
+        segment.matched ? (
+          <mark key={index} className="bg-yellow-200 dark:bg-yellow-700 text-foreground">
+            {segment.text}
+          </mark>
+        ) : (
+          <span key={index}>{segment.text}</span>
+        ),
+      ),
+    [query],
+  )
 
   return (
     <CommandCtx.Provider value={{ open, close }}>
@@ -175,22 +183,43 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
               {results.length === 0 ? (
                 <li className="px-3 py-2 text-sm text-muted-foreground">无结果</li>
               ) : (
-                results.slice(0, 20).map((d, i) => (
-                  <li key={d.id}>
-                    <Link
-                      href={`/${d.type === 'post' ? 'blog' : 'projects'}/${d.slug}`}
-                      className={`block rounded px-3 py-2 hover:bg-accent ${i === active ? 'bg-accent' : ''}`}
-                      onClick={close}
-                    >
-                      <div className="font-medium">{highlight(d.title) as any}</div>
-                      {buildSnippet(d) && (
+                results.slice(0, 20).map((d, i) => {
+                  const snippet = buildSnippet(d, query)
+                  return (
+                    <li key={d.id}>
+                      <Link
+                        href={`/${d.type === 'post' ? 'blog' : 'projects'}/${d.slug}` as any}
+                        className={`block rounded px-3 py-2 hover:bg-accent ${i === active ? 'bg-accent' : ''}`}
+                        onClick={close}
+                      >
+                        <div className="font-medium">{renderHighlight(d.title) as any}</div>
                         <div className="text-xs text-muted-foreground line-clamp-2">
-                          {highlight(buildSnippet(d)!) as any}
+                          {(() => {
+                            const metaParts: string[] = []
+                            if (d.namespace) metaParts.push(d.namespace)
+                            if (d.createdAt) metaParts.push(`发布 ${formatDateTime(d.createdAt)}`)
+                            if (d.updatedAt && d.updatedAt !== d.createdAt)
+                              metaParts.push(`更新 ${formatDateTime(d.updatedAt)}`)
+                            if (typeof d.wordCount === 'number') metaParts.push(`${d.wordCount} 字`)
+                            if (typeof d.hits === 'number') metaParts.push(`${d.hits} 次浏览`)
+                            const metaText = metaParts.join(' · ')
+                            return (
+                              <>
+                                {metaText}
+                                {snippet ? (
+                                  <>
+                                    {metaText ? ' · ' : ''}
+                                    {renderHighlight(snippet) as any}
+                                  </>
+                                ) : null}
+                              </>
+                            )
+                          })()}
                         </div>
-                      )}
-                    </Link>
-                  </li>
-                ))
+                      </Link>
+                    </li>
+                  )
+                })
               )}
             </ul>
           </div>

@@ -1,14 +1,31 @@
 import Link from 'next/link'
-import { getAllPosts, getAllProjects } from '@/lib/content'
+import { getAllProjects } from '@/lib/content'
+import { listAllPublicDocs, listUserPublicRepos } from '@/lib/yuque'
 import { siteConfig } from '@/config/site'
-import Image from 'next/image'
+import { formatDateTime } from '@/lib/datetime'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { JsonLd } from '@/components/site/json-ld'
 
 // 首页：Hero、自我介绍、主要链接、最近文章、精选项目、社交链接
-export default function HomePage() {
-  const posts = getAllPosts().slice(0, 5)
+export const revalidate = 60 * 10
+
+export default async function HomePage() {
+  const login = process.env.YUQUE_LOGIN || ''
+  const includeDrafts = process.env.YUQUE_INCLUDE_DRAFTS === 'true'
+  const yuquePosts = login ? await listAllPublicDocs(login, { includeDrafts }) : []
+  const repos = login ? await listUserPublicRepos(login) : []
+  const repoNameMap = new Map<string, string>(repos.map((r) => [r.namespace, r.name || r.slug]))
+  const quickLinks = Array.isArray(siteConfig.quickLinks) ? siteConfig.quickLinks : []
+  const posts = yuquePosts.slice(0, 10).map((it) => ({
+    slug: `${it.namespace}/${it.doc.slug}`,
+    title: it.doc.title,
+    repo: repoNameMap.get(it.namespace) || it.repo || it.namespace.split('/')[1],
+    createdAt: it.doc.created_at,
+    updatedAt: it.doc.updated_at,
+    wordCount: typeof it.doc.word_count === 'number' ? it.doc.word_count : undefined,
+    hits: typeof it.doc.hits === 'number' ? it.doc.hits : undefined,
+  }))
   const projects = getAllProjects().slice(0, 4)
   return (
     <div className="space-y-10">
@@ -60,6 +77,32 @@ export default function HomePage() {
         </div>
       </section>
 
+      {quickLinks.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">常用入口</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {quickLinks.map((link) => {
+              if (!link?.url || !link?.title) return null
+              const isExternal = /^https?:/i.test(link.url)
+              return (
+                <Link
+                  key={`${link.title}-${link.url}`}
+                  href={link.url}
+                  target={isExternal ? '_blank' : undefined}
+                  rel={isExternal ? 'noreferrer' : undefined}
+                  className="block rounded-lg border p-4 transition-colors hover:bg-accent/50"
+                >
+                  <div className="text-base font-medium">{link.title}</div>
+                  {link.description && (
+                    <p className="mt-1 text-sm text-muted-foreground">{link.description}</p>
+                  )}
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
           <h2 className="text-xl font-semibold">最近文章</h2>
@@ -70,31 +113,25 @@ export default function HomePage() {
         {posts.length === 0 ? (
           <p className="text-sm text-muted-foreground">暂无文章。</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="divide-y rounded-md border">
             {posts.map((p) => (
-              <li key={p.slug}>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      <Link className="underline" href={`/blog/${p.slug}` as any}>
-                        {p.title}
-                      </Link>
-                    </CardTitle>
-                    {p.excerpt && <CardDescription>{p.excerpt}</CardDescription>}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex flex-wrap gap-2">
-                        {p.tags?.slice(0, 3).map((t) => (
-                          <Badge key={t} variant="secondary">
-                            #{t}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div>{new Date(p.date).toLocaleDateString()}</div>
-                    </div>
-                  </CardContent>
-                </Card>
+              <li key={p.slug} className="flex items-center justify-between px-3 py-2">
+                <Link className="max-w-[70%] truncate underline" href={`/blog/${p.slug}` as any}>
+                  {p.title}
+                </Link>
+                <div className="shrink-0 text-xs text-muted-foreground flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
+                  <span className="hidden sm:inline text-muted-foreground/80">{p.repo}</span>
+                  <span>发布 {formatDateTime(p.createdAt)}</span>
+                  {p.updatedAt && p.updatedAt !== p.createdAt && (
+                    <span className="text-muted-foreground/70">
+                      更新 {formatDateTime(p.updatedAt)}
+                    </span>
+                  )}
+                  <span className="flex gap-2">
+                    {typeof p.wordCount === 'number' && <span>{p.wordCount} 字</span>}
+                    {typeof p.hits === 'number' && <span>{p.hits} 次浏览</span>}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>

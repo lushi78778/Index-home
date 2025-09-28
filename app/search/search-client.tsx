@@ -1,41 +1,35 @@
 'use client'
 
-import MiniSearch from 'minisearch'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { buildSnippet, createMiniSearch, getHighlightSegments, type SearchDoc } from '@/lib/search'
+import { formatDateTime } from '@/lib/datetime'
 
-type Doc = {
-  id: string
+type YuqueSearchItem = {
+  id: number
+  type: string
   title: string
-  slug: string
-  type: 'post' | 'project'
-  excerpt?: string
-  snippet?: string
-  content?: string
-  tags?: string[]
+  summary?: string
+  url?: string
+  book?: { namespace?: string }
+  doc?: { slug?: string }
+  updated_at?: string
 }
 
 export function SearchClient() {
   const sp = useSearchParams()
   const router = useRouter()
   const [query, setQuery] = useState('')
-  const [docs, setDocs] = useState<Doc[]>([])
+  const [docs, setDocs] = useState<SearchDoc[]>([])
   const [active, setActive] = useState(0)
-  const mini = useMemo(
-    () =>
-      new MiniSearch<Doc>({
-        fields: ['title', 'excerpt', 'snippet', 'content', 'tags'],
-        storeFields: ['title', 'slug', 'type', 'excerpt', 'snippet', 'content'],
-        searchOptions: { prefix: true, fuzzy: 0.2 },
-      }),
-    [],
-  )
+  const mini = useMemo(() => createMiniSearch(), [])
 
+  // 复用同一份静态索引，避免客户端重复计算（作为 Yuque 搜索的兜底）
   useEffect(() => {
     fetch('/api/search-index')
       .then((r) => r.json())
-      .then((data: Doc[]) => {
+      .then((data: SearchDoc[]) => {
         setDocs(data)
         mini.addAll(data)
       })
@@ -47,7 +41,50 @@ export function SearchClient() {
     setActive(0)
   }, [sp])
 
-  const results = query ? mini.search(query).map((r) => r as any as Doc & { id: string }) : docs
+  const [yuqueItems, setYuqueItems] = useState<YuqueSearchItem[] | null>(null)
+
+  useEffect(() => {
+    let aborted = false
+    const q = query.trim()
+    if (!q) {
+      setYuqueItems(null)
+      return
+    }
+    fetch(`/api/yuque-search?q=${encodeURIComponent(q)}&limit=50`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (aborted) return
+        const arr = Array.isArray(json?.data) ? (json.data as YuqueSearchItem[]) : []
+        setYuqueItems(arr)
+      })
+      .catch(() => setYuqueItems(null))
+    return () => {
+      aborted = true
+    }
+  }, [query])
+
+  const results: SearchDoc[] = (() => {
+    const q = query.trim()
+    if (!q) return docs
+    if (yuqueItems && yuqueItems.length) {
+      // 将 Yuque 结果映射为本地统一结构
+      return yuqueItems.map((it) => {
+        const ns = it.book?.namespace || ''
+        const slug = it.doc?.slug || (it.url ? it.url.split('/').filter(Boolean).slice(-1)[0] : '')
+        return {
+          id: String(it.id),
+          title: it.title,
+          slug: ns && slug ? `${ns}/${slug}` : slug,
+          type: 'post' as const,
+          snippet: it.summary || '',
+          namespace: ns || undefined,
+          updatedAt: it.updated_at || undefined,
+        }
+      })
+    }
+    // 兜底：使用本地 MiniSearch
+    return mini.search(q).map((hit) => hit as unknown as SearchDoc)
+  })()
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -68,46 +105,17 @@ export function SearchClient() {
     return () => window.removeEventListener('keydown', onKey)
   }, [results, active, router])
 
-  function highlight(text: string) {
-    const q = query.trim()
-    if (!q) return text
-    try {
-      const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'ig')
-      return (
-        <>
-          {text.split(re).map((part, i) =>
-            re.test(part) ? (
-              <mark key={i} className="bg-yellow-200 dark:bg-yellow-700 text-foreground">
-                {part}
-              </mark>
-            ) : (
-              <span key={i}>{part}</span>
-            ),
-          )}
-        </>
-      )
-    } catch {
-      return text
-    }
-  }
-
-  function buildSnippet(d: Doc): string | undefined {
-    // 优先使用 excerpt，其次使用 content/snippet 生成命中窗口
-    if (d.excerpt) return d.excerpt
-    const text = d.content || d.snippet
-    if (!text) return undefined
-    const q = query.trim()
-    if (!q) return d.snippet || text.slice(0, 160)
-    const lower = text.toLowerCase()
-    const idx = lower.indexOf(q.toLowerCase())
-    if (idx === -1) return d.snippet || text.slice(0, 160)
-    const window = 120
-    const start = Math.max(0, idx - window / 2)
-    const end = Math.min(text.length, idx + q.length + window / 2)
-    const prefix = start > 0 ? '…' : ''
-    const suffix = end < text.length ? '…' : ''
-    return `${prefix}${text.slice(start, end).trim()}${suffix}`
-  }
+  // 借助统一的工具函数生成高亮片段，避免与命令面板实现不一致
+  const renderHighlight = (text: string) =>
+    getHighlightSegments(text, query).map((segment, index) =>
+      segment.matched ? (
+        <mark key={index} className="bg-yellow-200 dark:bg-yellow-700 text-foreground">
+          {segment.text}
+        </mark>
+      ) : (
+        <span key={index}>{segment.text}</span>
+      ),
+    )
 
   return (
     <div className="space-y-4">
@@ -127,19 +135,39 @@ export function SearchClient() {
       />
       <div className="text-xs text-muted-foreground">↑/↓ 选择 · Enter 跳转</div>
       <ul className="space-y-2">
-        {results.map((d, i) => (
-          <li key={d.id}>
-            <Link
-              className={`underline ${i === active ? 'bg-accent' : ''}`}
-              href={`/${d.type === 'post' ? 'blog' : 'projects'}/${d.slug}`}
-            >
-              {highlight(d.title) as any}
-            </Link>
-            {buildSnippet(d) && (
-              <span className="text-muted-foreground"> · {highlight(buildSnippet(d)!) as any}</span>
-            )}
-          </li>
-        ))}
+        {results.map((d, i) => {
+          const snippet = buildSnippet(d, query)
+          return (
+            <li key={d.id}>
+              <Link
+                className={`underline ${i === active ? 'bg-accent' : ''}`}
+                href={`/${d.type === 'post' ? 'blog' : 'projects'}/${d.slug}` as any}
+              >
+                {renderHighlight(d.title) as any}
+              </Link>
+              {(() => {
+                const meta: string[] = []
+                if (d.namespace) meta.push(d.namespace)
+                if (d.createdAt) meta.push(`发布 ${formatDateTime(d.createdAt)}`)
+                if (d.updatedAt && d.updatedAt !== d.createdAt)
+                  meta.push(`更新 ${formatDateTime(d.updatedAt)}`)
+                if (typeof d.wordCount === 'number') meta.push(`${d.wordCount} 字`)
+                if (typeof d.hits === 'number') meta.push(`${d.hits} 次浏览`)
+                return (
+                  <span className="text-muted-foreground">
+                    {meta.length > 0 ? meta.join(' · ') : null}
+                    {snippet ? (
+                      <>
+                        {meta.length > 0 ? ' · ' : ''}
+                        {renderHighlight(snippet) as any}
+                      </>
+                    ) : null}
+                  </span>
+                )
+              })()}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )

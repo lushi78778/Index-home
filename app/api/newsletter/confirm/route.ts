@@ -1,6 +1,33 @@
 import { NextResponse } from 'next/server'
 import { Redis } from '@upstash/redis'
 
+const RESEND_AUDIENCES_ENDPOINT = 'https://api.resend.com/audiences'
+
+async function addContact({
+  email,
+  audienceId,
+  apiKey,
+}: {
+  email: string
+  audienceId: string
+  apiKey: string
+}) {
+  const res = await fetch(`${RESEND_AUDIENCES_ENDPOINT}/${audienceId}/contacts`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  })
+  if (res.status === 409) return { ok: true }
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    return { ok: false as const, detail }
+  }
+  return { ok: true }
+}
+
 // GET /api/newsletter/confirm?token=...
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -9,27 +36,26 @@ export async function GET(req: Request) {
 
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
-  const bdToken = process.env.BUTTONDOWN_API_TOKEN
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
-  if (!redisUrl || !redisToken || !bdToken) return NextResponse.json({ ok: false }, { status: 500 })
+  const resendKey = process.env.RESEND_API_KEY
+  const audienceId = process.env.RESEND_NEWSLETTER_AUDIENCE_ID
+
+  if (!redisUrl || !redisToken || !resendKey || !audienceId) {
+    return NextResponse.json({ ok: false }, { status: 500 })
+  }
 
   const redis = new Redis({ url: redisUrl, token: redisToken })
   const email = await redis.get<string>(`newsletter:confirm:${token}`)
-  if (!email) return NextResponse.json({ ok: false, error: 'invalid_or_expired' }, { status: 400 })
-
-  try {
-    const res = await fetch('https://api.buttondown.email/v1/subscribers', {
-      method: 'POST',
-      headers: { Authorization: `Token ${bdToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, referrer_url: siteUrl }),
-    })
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      return NextResponse.json({ ok: false, error: 'upstream', detail: text }, { status: 502 })
-    }
-    await redis.del(`newsletter:confirm:${token}`)
-    return NextResponse.json({ ok: true })
-  } catch (e) {
-    return NextResponse.json({ ok: false }, { status: 500 })
+  if (!email) {
+    return NextResponse.json({ ok: false, error: 'invalid_or_expired' }, { status: 400 })
   }
+
+  const result = await addContact({ email, audienceId, apiKey: resendKey })
+  if (!result.ok) {
+    return NextResponse.json(
+      { ok: false, error: 'upstream', detail: result.detail },
+      { status: 502 },
+    )
+  }
+  await redis.del(`newsletter:confirm:${token}`)
+  return NextResponse.json({ ok: true })
 }

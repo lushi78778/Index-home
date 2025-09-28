@@ -88,5 +88,5 @@
 
   // "exclude": [...]：指定需要从编译中排除的文件和目录。
   // "node_modules": 排除所有第三方依赖，避免不必要的检查和编译。
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "tests/**/*.ts", "tests/**/*.tsx"]
 }

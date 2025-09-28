@@ -82,8 +82,9 @@ function main() {
     if (!merged.CONTACT_TO_EMAIL) warn.push('CONTACT_TO_EMAIL 为空，联系表单收件人未配置')
   }
   if (fs.existsSync(path.join(root, 'app', 'api', 'newsletter'))) {
-    if (!merged.BUTTONDOWN_API_TOKEN)
-      warn.push('BUTTONDOWN_API_TOKEN 为空，订阅/双重确认可能无法工作')
+    if (!merged.RESEND_API_KEY) warn.push('RESEND_API_KEY 为空，订阅流程无法调用 Resend 接口')
+    if (!merged.RESEND_NEWSLETTER_AUDIENCE_ID)
+      warn.push('RESEND_NEWSLETTER_AUDIENCE_ID 为空，无法写入订阅 Audiences')
     if (!merged.NEWSLETTER_FROM) warn.push('NEWSLETTER_FROM 为空，订阅邮件发件人未配置')
   }
   if (

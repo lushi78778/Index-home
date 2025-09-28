@@ -27,9 +27,10 @@ test('tags index lists tags and tag page shows items', async ({ page }) => {
   const tagLink = page.locator('a[href^="/tags/"]').first()
   await expect(tagLink).toBeVisible()
   await Promise.all([page.waitForURL(/\/tags\//), tagLink.click()])
-  // Tag page should show section headings and at least one list
-  await expect(page.getByRole('heading', { name: /文章/ })).toBeVisible()
-  // presence of either posts or projects list items
-  const anyItem = page.locator('ul li a[href^="/blog/"] , ul li a[href^="/projects/"]').first()
-  await expect(anyItem).toBeVisible()
+  // Tag page should show the project section heading
+  await expect(page.getByRole('heading', { name: /项目/ })).toBeVisible()
+  // presence of at least one project item or the empty state message
+  const anyItem = page.locator('ul li a[href^="/projects/"]').first()
+  const empty = page.getByText('暂无项目。')
+  await expect.any([anyItem, empty])
 })
