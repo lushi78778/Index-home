@@ -5,7 +5,13 @@ import RepoTocSidebar from '@/components/site/repo-toc-sidebar'
 import { Toc } from '@/components/site/toc'
 import { InlineTocPanel } from '@/components/site/inline-toc-panel'
 import { MindMapCanvas } from '@/components/site/mind-map-canvas'
-import { getDocDetail, listRepoDocsRaw, listRepoMindMap, type MindMapDiagram } from '@/lib/yuque'
+import {
+  getDocDetail,
+  listRepoDocsRaw,
+  listRepoMindMap,
+  type MindMapDiagram,
+  getViews,
+} from '@/lib/yuque'
 import { sanitizeHtml } from '@/lib/html'
 import { formatDateTime } from '@/lib/datetime'
 
@@ -115,6 +121,11 @@ export default async function Page({ params }: PageParams) {
         : undefined,
   }
 
+  // 统一视图：优先 read_count，再回退 hits；若都缺失，尝试缓存详情（通常同一次请求已有 detail，可直接得到）
+  const views = await getViews(namespace, slug, {
+    hint: { read_count: (detail as any)?.read_count, hits: (detail as any)?.hits },
+  })
+
   return (
     <div className="container mx-auto grid grid-cols-[280px_minmax(0,1fr)_260px] gap-6 py-6">
       {/* 左侧：知识库 TOC（目录树） */}
@@ -133,10 +144,7 @@ export default async function Page({ params }: PageParams) {
             </span>
           )}
           {typeof detail.word_count === 'number' && <span>{detail.word_count} 字</span>}
-          {(() => {
-            const views = (detail as any)?.read_count ?? (detail as any)?.hits
-            return typeof views === 'number' ? <span>{views} 次浏览</span> : null
-          })()}
+          {typeof views === 'number' && <span>{views} 次浏览</span>}
           {typeof (detail as any).likes_count === 'number' && (
             <span>{(detail as any).likes_count} 喜欢</span>
           )}

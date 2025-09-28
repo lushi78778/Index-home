@@ -36,6 +36,11 @@ type YuqueDocDetail = YuqueDoc & {
 
 const BASE = process.env.YUQUE_BASE || 'https://www.yuque.com/api/v2'
 const TOKEN = process.env.YUQUE_TOKEN || ''
+// 统一控制对语雀 API 的 ISR 缓存时间（秒），默认 10 分钟，可通过环境变量覆盖
+const FETCH_REVALIDATE = Math.max(
+  0,
+  Number(process.env.YUQUE_FETCH_REVALIDATE || 60 * 10) || 60 * 10,
+)
 const SHOULD_LOG = process.env.NODE_ENV !== 'test'
 
 if (!TOKEN) {
@@ -54,7 +59,7 @@ async function yqFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { ...headers, ...(init?.headers as any) },
     // 使用 ISR 缓存，减轻频繁请求负载
-    next: { revalidate: 60 * 10 },
+    next: { revalidate: FETCH_REVALIDATE },
   })
   if (!res.ok) {
     const text = await res.text()
@@ -66,6 +71,11 @@ async function yqFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 // 缓存：namespace -> repo id（减少重复查询）
 const repoIdCache = new Map<string, number>()
+
+// 简单的详情缓存：key=namespace|slug，值为 Promise，防止重复并发请求；附带 TTL
+type CacheEntry<T> = { p: Promise<T>; expireAt: number }
+const detailCache = new Map<string, CacheEntry<YuqueDocDetail | null>>()
+const DEFAULT_DETAIL_TTL = 5 * 60 * 1000 // 5 分钟
 
 async function getRepoIdByNamespace(namespace: string): Promise<number | undefined> {
   if (!namespace) return undefined
@@ -207,7 +217,18 @@ export async function listRepoDocsRaw(
 export async function getDocDetail(
   namespace: string,
   slug: string,
+  opts?: { useCache?: boolean; ttlMs?: number },
 ): Promise<YuqueDocDetail | null> {
+  const useCache = opts?.useCache !== false
+  const ttl = Math.max(0, opts?.ttlMs ?? DEFAULT_DETAIL_TTL)
+  const key = `${namespace}|${slug}`
+
+  if (useCache) {
+    const hit = detailCache.get(key)
+    if (hit && Date.now() < hit.expireAt) return hit.p
+  }
+
+  const exec = async (): Promise<YuqueDocDetail | null> => {
   // 1) 直接按 slug 走 namespace
   try {
     const byNs = await yqFetch<YuqueDocDetail>(
@@ -251,6 +272,15 @@ export async function getDocDetail(
     }
   } catch {}
   return null
+  }
+
+  if (!useCache) return exec()
+
+  const p = exec()
+  detailCache.set(key, { p, expireAt: Date.now() + ttl })
+  // 失败时清理缓存，避免长时间缓存 null 错误
+  p.catch(() => detailCache.delete(key))
+  return p
 }
 
 export type PublicDocItem = {
@@ -503,4 +533,60 @@ export async function listRepoMindMap(
     console.warn('[yuque] listRepoMindMap error:', namespace, slug, (err as any)?.message || err)
     return null
   }
+}
+
+// —— 视图（浏览量）工具 ——
+/**
+ * 统一获取某篇文档的“浏览量”：优先 read_count，其次 hits。
+ * - 可传入 hint 以避免二次请求；否则内部会通过 getDocDetail（带缓存）补齐。
+ */
+export async function getViews(
+  namespace: string,
+  slug: string,
+  opts?: { hint?: { read_count?: number; hits?: number }; ttlMs?: number },
+): Promise<number | undefined> {
+  const hint = opts?.hint
+  if (typeof hint?.read_count === 'number') return hint.read_count
+  // 若只提供了 hits，但我们偏好 read_count，则尝试取详情（带缓存）
+  const detail = await getDocDetail(namespace, slug, { useCache: true, ttlMs: opts?.ttlMs })
+  const views = (detail as any)?.read_count ?? (detail as any)?.hits ?? hint?.hits
+  return typeof views === 'number' ? views : undefined
+}
+
+/**
+ * 为一批 slug 补齐浏览量（常用于列表页）。
+ * 仅对缺少 read_count 的条目请求详情，其它复用 hint。
+ */
+export async function ensureViews(
+  namespace: string,
+  slugs: string[],
+  hints?: Record<string, { read_count?: number; hits?: number }>,
+  opts?: { ttlMs?: number },
+): Promise<Record<string, number | undefined>> {
+  const out: Record<string, number | undefined> = {}
+  const need: string[] = []
+  for (const s of slugs) {
+    const h = hints?.[s]
+    if (typeof h?.read_count === 'number') {
+      out[s] = h.read_count
+    } else if (typeof h?.hits === 'number') {
+      // 先把 hits 写入，后续再尝试通过详情提升为 read_count
+      out[s] = h.hits
+      need.push(s)
+    } else {
+      need.push(s)
+    }
+  }
+  if (need.length === 0) return out
+  const results = await Promise.allSettled(
+    need.map((s) => getDocDetail(namespace, s, { useCache: true, ttlMs: opts?.ttlMs })),
+  )
+  results.forEach((r, i) => {
+    const s = need[i]
+    if (r.status === 'fulfilled' && r.value) {
+      const v = (r.value as any)?.read_count ?? (r.value as any)?.hits
+      if (typeof v === 'number') out[s] = v
+    }
+  })
+  return out
 }

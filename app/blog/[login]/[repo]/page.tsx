@@ -3,7 +3,7 @@ import {
   listUserPublicRepos,
   buildTocTree,
   listRepoDocsRaw,
-  getDocDetail,
+  ensureViews,
 } from '@/lib/yuque'
 import Link from 'next/link'
 import { formatDateTime } from '@/lib/datetime'
@@ -71,7 +71,7 @@ export default async function RepoIndexPage({
   const getSlug = (n: TocNode) =>
     n.slug || (n.url ? n.url.split('/').filter(Boolean).slice(-1)[0] : '')
 
-  // 预取：为即将渲染的文档补齐 read_count（与详情一致，限 30 个）
+  // 预取：为即将渲染的文档补齐 read_count（与详情一致）
   const collectSlugs = (
     arr: TocNode[] | undefined,
     depth = 1,
@@ -89,33 +89,10 @@ export default async function RepoIndexPage({
     return out
   }
   const slugs = Array.from(collectSlugs(tree))
-  const detailViewsMap: Record<string, number> = {}
-  const needDetail: string[] = []
-  for (const s of slugs) {
-    const meta = docsMeta[s]
-    if (!meta || typeof meta.read_count !== 'number') needDetail.push(s)
-    if (needDetail.length >= 30) break
-  }
-  if (needDetail.length) {
-    const results = await Promise.allSettled(needDetail.map((s) => getDocDetail(namespace, s)))
-    results.forEach((r, i) => {
-      if (r.status === 'fulfilled' && r.value) {
-        const s = needDetail[i]
-        const v = (r.value as any)?.read_count ?? (r.value as any)?.hits
-        if (typeof v === 'number') detailViewsMap[s] = v
-        const curr = docsMeta[s] || {}
-        docsMeta[s] = {
-          ...curr,
-          word_count: curr.word_count ?? (r.value as any)?.word_count,
-          updated_at: curr.updated_at ?? (r.value as any)?.updated_at,
-          created_at: curr.created_at ?? (r.value as any)?.created_at,
-          read_count: curr.read_count ?? (r.value as any)?.read_count,
-          hits: curr.hits ?? (r.value as any)?.hits,
-          type: curr.type ?? (r.value as any)?.type,
-        }
-      }
-    })
-  }
+  const viewHints = Object.fromEntries(
+    slugs.map((s) => [s, { read_count: docsMeta[s]?.read_count, hits: docsMeta[s]?.hits }]),
+  )
+  const viewsMap = await ensureViews(namespace, slugs, viewHints)
 
   // 单行文档行
   const DocRow = ({ node }: { node: TocNode }) => {
@@ -123,11 +100,7 @@ export default async function RepoIndexPage({
     if (!slug) return null
     const meta = docsMeta[slug] || {}
     const views =
-      typeof meta.read_count === 'number'
-        ? meta.read_count
-        : typeof detailViewsMap[slug] === 'number'
-          ? detailViewsMap[slug]
-          : meta.hits
+      typeof meta.read_count === 'number' ? meta.read_count : viewsMap[slug] ?? meta.hits
     return (
       <div className="rounded border px-3 py-2 flex items-center justify-between hover:bg-accent/30 transition-colors">
         <Link

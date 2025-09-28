@@ -76,6 +76,8 @@ export async function GET(req: Request) {
     env: {
       YUQUE_LOGIN: !!login,
       YUQUE_TOKEN_present: tokenPresent,
+      // 暴露一些和缓存/再验证相关的环境信息，便于评估 ISR 策略
+      NEXT_REVALIDATE_pages: 60 * 10,
     },
     probe,
     firstRepo: firstNamespace ? { namespace: firstNamespace, docsCount: firstRepoDocs } : null,
