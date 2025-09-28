@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getAllProjects } from '@/lib/content'
-import { listAllPublicDocs, listUserPublicRepos } from '@/lib/yuque'
+import { listAllPublicDocs, listUserPublicRepos, ensureViews } from '@/lib/yuque'
 import { siteConfig } from '@/config/site'
 import { formatDateTime } from '@/lib/datetime'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,15 +17,43 @@ export default async function HomePage() {
   const repos = login ? await listUserPublicRepos(login) : []
   const repoNameMap = new Map<string, string>(repos.map((r) => [r.namespace, r.name || r.slug]))
   const quickLinks = Array.isArray(siteConfig.quickLinks) ? siteConfig.quickLinks : []
-  const posts = yuquePosts.slice(0, 10).map((it) => ({
+  // 最近文章：按发布时间（created_at）由近及远排序，取前 10
+  const postsRaw = [...yuquePosts]
+    .sort((a, b) => +new Date(b.doc.created_at) - +new Date(a.doc.created_at))
+    .slice(0, 10)
+
+  const posts = postsRaw.map((it) => ({
+    namespace: it.namespace,
+    slugOnly: it.doc.slug,
     slug: `${it.namespace}/${it.doc.slug}`,
     title: it.doc.title,
     repo: repoNameMap.get(it.namespace) || it.repo || it.namespace.split('/')[1],
     createdAt: it.doc.created_at,
     updatedAt: it.doc.updated_at,
     wordCount: typeof it.doc.word_count === 'number' ? it.doc.word_count : undefined,
+    readCount: typeof it.doc.read_count === 'number' ? it.doc.read_count : undefined,
     hits: typeof it.doc.hits === 'number' ? it.doc.hits : undefined,
   }))
+
+  // 统一浏览量：对首页列表也进行回填，保证与详情一致
+  if (posts.length) {
+    // 按 namespace 分组批量补齐，减少调用次数
+    const groupMap = new Map<string, typeof posts>()
+    for (const p of posts) {
+      if (!groupMap.has(p.namespace)) groupMap.set(p.namespace, [])
+      groupMap.get(p.namespace)!.push(p)
+    }
+    for (const [ns, arr] of groupMap) {
+      const hints = Object.fromEntries(
+        arr.map((p) => [p.slugOnly, { read_count: p.readCount, hits: p.hits }]),
+      )
+      const viewMap = await ensureViews(ns, arr.map((p) => p.slugOnly), hints)
+      for (const p of arr) {
+        const v = viewMap[p.slugOnly]
+        if (typeof v === 'number') p.readCount = v
+      }
+    }
+  }
   const projects = getAllProjects().slice(0, 4)
   return (
     <div className="space-y-10">
@@ -35,16 +63,16 @@ export default async function HomePage() {
           这里是我的个人主页，专注于 Web、前端工程与数字产品。
         </p>
         <div className="flex gap-3">
-          <Link href="/blog" className="underline">
+          <Link href={"/blog" as any} className="underline">
             阅读博客
           </Link>
-          <Link href="/projects" className="underline">
+          <Link href={"/projects" as any} className="underline">
             查看项目
           </Link>
-          <Link href="/contact" className="underline">
+          <Link href={"/contact" as any} className="underline">
             联系我
           </Link>
-          <Link href="/subscribe" className="underline">
+          <Link href={"/subscribe" as any} className="underline">
             订阅
           </Link>
         </div>
@@ -87,7 +115,7 @@ export default async function HomePage() {
               return (
                 <Link
                   key={`${link.title}-${link.url}`}
-                  href={link.url}
+                  href={link.url as any}
                   target={isExternal ? '_blank' : undefined}
                   rel={isExternal ? 'noreferrer' : undefined}
                   className="block rounded-lg border p-4 transition-colors hover:bg-accent/50"
@@ -106,7 +134,7 @@ export default async function HomePage() {
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
           <h2 className="text-xl font-semibold">最近文章</h2>
-          <Link href="/blog" className="text-sm underline">
+          <Link href={"/blog" as any} className="text-sm underline">
             更多 →
           </Link>
         </div>
@@ -129,7 +157,9 @@ export default async function HomePage() {
                   )}
                   <span className="flex gap-2">
                     {typeof p.wordCount === 'number' && <span>{p.wordCount} 字</span>}
-                    {typeof p.hits === 'number' && <span>{p.hits} 次浏览</span>}
+                    {typeof p.readCount === 'number'
+                      ? <span>{p.readCount} 次浏览</span>
+                      : typeof p.hits === 'number' && <span>{p.hits} 次浏览</span>}
                   </span>
                 </div>
               </li>
@@ -141,7 +171,7 @@ export default async function HomePage() {
       <section className="space-y-3">
         <div className="flex items-baseline justify-between">
           <h2 className="text-xl font-semibold">精选项目</h2>
-          <Link href="/projects" className="text-sm underline">
+          <Link href={"/projects" as any} className="text-sm underline">
             全部项目 →
           </Link>
         </div>

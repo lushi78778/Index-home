@@ -1,4 +1,10 @@
-import { listAllPublicDocs, listUserPublicRepos, listRepoToc, buildTocTree } from '@/lib/yuque'
+import {
+  listAllPublicDocs,
+  listUserPublicRepos,
+  listRepoToc,
+  buildTocTree,
+  ensureViews,
+} from '@/lib/yuque'
 import BlogGroupsPersist from '@/components/site/blog-groups-persist'
 import Link from 'next/link'
 import { formatDateTime } from '@/lib/datetime'
@@ -90,6 +96,30 @@ export default async function BlogIndex() {
             // 获取该知识库目录结构
             const tocRaw = await listRepoToc(g.namespace, { repoId: g.repo?.id })
             const tocTree = buildTocTree(tocRaw)
+            // 统一浏览量：预先为该知识库的叶子 slug 做回填
+            const collectLeafSlugs = (nodes: ReturnType<typeof buildTocTree>): string[] => {
+              const out = new Set<string>()
+              const walk = (arr: any[]) => {
+                for (const n of arr || []) {
+                  const hasChildren = !!(n.children && n.children.length)
+                  const slugFromUrl = (n.url || '').split('/').filter(Boolean).slice(-1)[0]
+                  const finalSlug = (n.slug || slugFromUrl || '').trim()
+                  const isDocLike = ['DOC', 'Mind'].includes(String(n.type || '')) || !!finalSlug
+                  if (!hasChildren && isDocLike && finalSlug) out.add(finalSlug)
+                  if (hasChildren) walk(n.children)
+                }
+              }
+              walk(nodes)
+              return Array.from(out)
+            }
+            const leafSlugs = collectLeafSlugs(tocTree)
+            const hintMap = Object.fromEntries(
+              g.docs.map((it: any) => [it.doc.slug, { read_count: it.doc.read_count, hits: it.doc.hits }]),
+            )
+            const viewsMap = leafSlugs.length
+              ? await ensureViews(g.namespace, leafSlugs, hintMap)
+              : {}
+
             return (
               <section key={g.namespace} id={id} className="rounded-md border p-2">
                 <details className="group" data-ns={g.namespace} {...(open ? { open: true } : {})}>
@@ -114,6 +144,7 @@ export default async function BlogIndex() {
                         namespace={g.namespace}
                         nodes={tocTree}
                         stats={new Map(g.docs.map((it) => [it.doc.slug, it]))}
+                        viewMap={viewsMap}
                       />
                     ) : (
                       <ul className="space-y-2">
@@ -135,7 +166,11 @@ export default async function BlogIndex() {
                               {typeof it.doc.word_count === 'number' && (
                                 <span>{it.doc.word_count} 字</span>
                               )}
-                              {typeof it.doc.hits === 'number' && <span>{it.doc.hits} 次浏览</span>}
+                              {(() => {
+                                const v = viewsMap?.[it.doc.slug]
+                                const views = typeof it.doc.read_count === 'number' ? it.doc.read_count : v ?? it.doc.hits
+                                return typeof views === 'number' ? <span>{views} 次浏览</span> : null
+                              })()}
                               {typeof it.doc.likes_count === 'number' && (
                                 <span>{it.doc.likes_count} 喜欢</span>
                               )}
@@ -162,10 +197,12 @@ function TocList({
   namespace,
   nodes,
   stats,
+  viewMap,
 }: {
   namespace: string
   nodes: ReturnType<typeof buildTocTree>
   stats: Map<string, any>
+  viewMap?: Record<string, number | undefined>
 }) {
   return (
     <ul className="space-y-2">
@@ -184,7 +221,7 @@ function TocList({
                     {n.title}
                   </summary>
                   <div className="ml-4 border-l pl-3 mt-2">
-                    <TocList namespace={namespace} nodes={n.children!} stats={stats} />
+                    <TocList namespace={namespace} nodes={n.children!} stats={stats} viewMap={viewMap} />
                   </div>
                 </details>
               )
@@ -193,7 +230,8 @@ function TocList({
             if (isDocLike && finalSlug) {
               const info = n.slug ? (stats.get(n.slug) as any) : undefined
               const doc = info?.doc ?? {}
-              const views = typeof doc.read_count === 'number' ? doc.read_count : doc.hits
+              const v = viewMap?.[finalSlug]
+              const views = typeof doc.read_count === 'number' ? doc.read_count : v ?? doc.hits
               return (
                 <div className="rounded border px-3 py-2 flex items-center justify-between hover:bg-accent/30 transition-colors">
                   <Link

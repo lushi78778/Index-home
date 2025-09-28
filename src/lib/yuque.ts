@@ -72,10 +72,67 @@ async function yqFetch<T>(path: string, init?: RequestInit): Promise<T> {
 // 缓存：namespace -> repo id（减少重复查询）
 const repoIdCache = new Map<string, number>()
 
-// 简单的详情缓存：key=namespace|slug，值为 Promise，防止重复并发请求；附带 TTL
-type CacheEntry<T> = { p: Promise<T>; expireAt: number }
-const detailCache = new Map<string, CacheEntry<YuqueDocDetail | null>>()
-const DEFAULT_DETAIL_TTL = 5 * 60 * 1000 // 5 分钟
+// 详情缓存：LRU + TTL + 失败短路
+class LRUCache<K, V> {
+  private max: number
+  private map: Map<K, { v: V; expireAt: number }>
+  private _hits = 0
+  private _misses = 0
+  private _sets = 0
+  private _evicts = 0
+  constructor(max = 200) {
+    this.max = Math.max(1, max)
+    this.map = new Map()
+  }
+  get(k: K): V | undefined {
+    const entry = this.map.get(k)
+    if (!entry) {
+      this._misses++
+      return undefined
+    }
+    if (Date.now() >= entry.expireAt) {
+      this.map.delete(k)
+      this._misses++
+      return undefined
+    }
+    // 触发 LRU：移动到末尾
+    this.map.delete(k)
+    this.map.set(k, entry)
+    this._hits++
+    return entry.v
+  }
+  set(k: K, v: V, ttlMs: number) {
+    const expireAt = Date.now() + Math.max(0, ttlMs)
+    if (this.map.has(k)) this.map.delete(k)
+    this.map.set(k, { v, expireAt })
+    this._sets++
+    this.ensureLimit()
+  }
+  private ensureLimit() {
+    while (this.map.size > this.max) {
+      const firstKey = this.map.keys().next().value as K
+      if (firstKey === undefined) break
+      this.map.delete(firstKey)
+      this._evicts++
+    }
+  }
+  get size() {
+    return this.map.size
+  }
+  get stats() {
+    return { hits: this._hits, misses: this._misses, sets: this._sets, evicts: this._evicts }
+  }
+}
+
+const DEFAULT_DETAIL_TTL = Math.max(1, Number(process.env.YUQUE_DETAIL_CACHE_TTL_MS || 5 * 60_000))
+const DEFAULT_FAIL_TTL = Math.max(1000, Number(process.env.YUQUE_DETAIL_FAIL_TTL_MS || 60_000))
+const DEFAULT_CACHE_MAX = Math.max(50, Number(process.env.YUQUE_DETAIL_CACHE_MAX || 200))
+
+const detailCache = new LRUCache<string, Promise<YuqueDocDetail | null>>(DEFAULT_CACHE_MAX)
+
+export function getDetailCacheStats() {
+  return { size: detailCache.size, ...detailCache.stats }
+}
 
 async function getRepoIdByNamespace(namespace: string): Promise<number | undefined> {
   if (!namespace) return undefined
@@ -224,8 +281,8 @@ export async function getDocDetail(
   const key = `${namespace}|${slug}`
 
   if (useCache) {
-    const hit = detailCache.get(key)
-    if (hit && Date.now() < hit.expireAt) return hit.p
+    const cached = detailCache.get(key)
+    if (cached) return cached
   }
 
   const exec = async (): Promise<YuqueDocDetail | null> => {
@@ -277,9 +334,20 @@ export async function getDocDetail(
   if (!useCache) return exec()
 
   const p = exec()
-  detailCache.set(key, { p, expireAt: Date.now() + ttl })
-  // 失败时清理缓存，避免长时间缓存 null 错误
-  p.catch(() => detailCache.delete(key))
+  // 先写入，进行并发去重；待完成后根据结果调整 TTL（成功/失败）
+  detailCache.set(key, p, ttl)
+  p.then((res) => {
+    if (res === null) {
+      // 失败短路：短 TTL 缓存 null，避免频繁重试
+      detailCache.set(key, Promise.resolve(null), DEFAULT_FAIL_TTL)
+    } else {
+      // 成功：覆盖为 resolved promise，正常 TTL
+      detailCache.set(key, Promise.resolve(res), ttl)
+    }
+  }).catch(() => {
+    // 异常也短路
+    detailCache.set(key, Promise.resolve(null), DEFAULT_FAIL_TTL)
+  })
   return p
 }
 
