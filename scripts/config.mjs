@@ -21,12 +21,14 @@ function loadYaml(file) {
 }
 
 function toTs(site) {
-  // 保留现有结构，便于最小变更接入
-  return `/**
- * 本文件由 scripts/config.mjs 自动生成，请勿手动修改。
- * 如需调整站点信息，请编辑根目录下的 config.yaml。
- */
+  // 生成包含命名导出、默认导出与兼容别名的配置文件，避免下游导入名不一致导致的报错。
+  return `// 重要：该文件由 \`npm run config\` 自动生成，请勿手动编辑。
+/* eslint-disable */
 export const siteConfig = ${JSON.stringify(site, null, 2)} as const
+export type SiteConfig = typeof siteConfig
+// 兼容历史：同时导出别名 site，及默认导出
+export const site = siteConfig
+export default siteConfig
 `
 }
 

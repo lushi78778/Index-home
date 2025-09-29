@@ -51,6 +51,7 @@
     "yaml": "^2.5.1"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "@lhci/cli": "^0.13.0",
     "@next/mdx": "14.2.5",
     "@playwright/test": "^1.47.2",
