@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# Alternative Dockerfile with optimized Alpine build
 
 # Build stage
 FROM node:20-alpine AS builder
@@ -8,7 +9,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (including dev deps for build)
+# Install dependencies
 RUN npm ci --silent
 
 # Copy source code
@@ -23,8 +24,8 @@ RUN npm run config
 # Build application with standalone output
 RUN npm run build
 
-# Production stage - use distroless for smaller size
-FROM gcr.io/distroless/nodejs20-debian12:nonroot AS runner
+# Production stage - optimized Alpine
+FROM node:20-alpine AS runner
 
 # Add build arguments
 ARG BUILDTIME
@@ -43,10 +44,17 @@ LABEL org.opencontainers.image.documentation="https://github.com/lushi78778/Inde
 
 WORKDIR /app
 
-# Copy built application (distroless already has nonroot user)
-COPY --from=builder --chown=nonroot:nonroot /app/public ./public
-COPY --from=builder --chown=nonroot:nonroot /app/.next/standalone ./
-COPY --from=builder --chown=nonroot:nonroot /app/.next/static ./.next/static
+# Install only essential runtime packages
+RUN apk add --no-cache dumb-init tini \
+    && addgroup -g 1001 -S nodejs \
+    && adduser -S nextjs -u 1001 -G nodejs
+
+# Copy built application with correct ownership in single layer
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
 
 EXPOSE 3000
 
@@ -54,4 +62,6 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV=production
 
-CMD ["server.js"]
+# Use tini for proper signal handling (lighter than dumb-init)
+ENTRYPOINT ["tini", "--"]
+CMD ["node", "server.js"]

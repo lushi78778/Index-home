@@ -25,7 +25,7 @@ REVALIDATE_PATH ?= /
 
 curl_endpoint = @curl -fsS "http://$(HOST):$(PORT)$(1)"
 
-.PHONY: help setup install config env dev build start preview typecheck lint lint-fix format format-check test test-watch e2e e2e-ui check ci lhci analyze clean clean-all sync-projects yuque-health yuque-search yuque-toc yuque-toc-raw revalidate sitemap rss search-index stop stop-ports docker-build docker-run docker-stop compose-up compose-down compose-restart pw-install doctor release tag push-tags changelog
+.PHONY: help setup install config env dev build start preview typecheck lint lint-fix format format-check test test-watch e2e e2e-ui check ci lhci analyze clean clean-all sync-projects yuque-health yuque-search yuque-toc yuque-toc-raw revalidate sitemap rss search-index stop stop-ports docker-build docker-run docker-stop docker-push docker-login compose-up compose-down compose-restart pw-install doctor release tag push-tags changelog
 
 help: ##@general 显示分组后的帮助信息
 	@printf "用法: make <目标>\n"
@@ -220,6 +220,17 @@ docker-run: ##@docker 运行镜像并映射到本机 3000 端口
 
 docker-stop: ##@docker 停止并移除运行中的容器
 	-@docker rm -f index-home >/dev/null 2>&1 || true
+
+docker-push: ##@docker 推送镜像到 Docker Hub（需先登录）
+	@echo "推送镜像到 Docker Hub..."
+	docker tag index-home:latest lushi78778/index-home:latest
+	docker tag index-home:latest lushi78778/index-home:v$(VERSION)
+	docker push lushi78778/index-home:latest
+	docker push lushi78778/index-home:v$(VERSION)
+	@echo "→ 镜像已推送到 Docker Hub"
+
+docker-login: ##@docker 登录 Docker Hub（交互式）
+	docker login
 
 compose-up: ##@docker 使用 docker-compose.yml 启动服务
 	docker compose up -d

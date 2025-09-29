@@ -26,6 +26,8 @@ const nextConfig = {
   // 定义 Next.js 可以识别的页面文件扩展名
   // 添加 'mdx' 是为了让 MDX 文件也能被当作页面处理
   pageExtensions: ['ts', 'tsx', 'mdx'],
+  // 启用 standalone 输出模式，用于 Docker 部署
+  output: 'standalone',
   experimental: {
     // 启用类型化路由，可以为内部链接提供更好的类型提示和自动补全
     typedRoutes: true,
