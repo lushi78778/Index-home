@@ -21,7 +21,7 @@ All notable changes to this project will be documented in this file.
 ## v1.0.2 - 2025-09-29
 
 - **镜像大小优化**: 从 226MB 减至 178MB（-21%），新增 Distroless 和优化 Alpine 两个版本
-- **Docker Hub 自动发布**: 推送 `v*` 标签自动构建多架构镜像（amd64/arm64）并发布到 Docker Hub
+- **Docker Hub 集成发布**: 推送 `v*` 标签触发 GitHub Release + Docker Hub 多架构镜像发布（amd64/arm64）
 - **Dockerfile 重构**: 启用 Next.js standalone 输出、使用 Distroless 基础镜像、完善 OCI 标签和信号处理
 - **许可证**: 添加 MIT License 文件和 package.json 许可证字段
 - **Makefile 增强**: 新增 `docker-push`、`docker-login` 目标支持本地发布

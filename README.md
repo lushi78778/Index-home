@@ -341,21 +341,54 @@
 ---
 
 ## 部署与运维（Docker/Compose）
-- **环境变量管理**：
-  - 本地使用 `.env.local`；生产环境通过部署平台（Vercel/Render/自建服务器）注入。
-  - 需同步的关键变量：Yuque / Resend / Upstash / Plausible / NEXT_PUBLIC_*。
-- **构建流程**：
-  - 在 CI 或镜像构建阶段必须执行 `npm run config`（或 `make config`）保证 `site.ts` 最新。
-  - Dockerfile 使用多阶段：builder 安装依赖 + build，runner 仅保留 `.next`、`public`、`node_modules`。
-  - 默认 `CMD npm run start`，暴露 `PORT=3000`。
-- **Docker Compose**：
-  - `docker-compose.yml` 示例已列出所需环境变量，可根据部署环境改为 secret/配置中心。
-  - 命令：
-    ```bash
-    make docker-build            # 构建镜像 index-home:latest
-    make docker-run              # 后台运行，映射 3000
-    make compose-up              # 使用 docker compose up -d
-    ```
+
+### Docker Hub 镜像
+项目已发布到 Docker Hub，支持多架构（amd64/arm64）：
+
+```bash
+# 快速运行（推荐）
+docker run -d -p 3000:3000 --name index-home \
+  -e NEXT_PUBLIC_SITE_URL=http://localhost:3000 \
+  lushi78778/index-home:latest
+
+# 访问应用
+open http://localhost:3000
+```
+
+**镜像信息**：
+- **仓库地址**: [lushi78778/index-home](https://hub.docker.com/r/lushi78778/index-home)
+- **镜像大小**: ~178MB（优化后）
+- **基础镜像**: Google Distroless（安全、最小化）
+- **标签策略**: `latest`、`v1.x.x`、`v1.x`、`v1`
+
+### 环境变量管理
+- **本地开发**：使用 `.env.local`
+- **生产部署**：通过部署平台（Vercel/Render/Docker）注入
+- **关键变量**：Yuque / Resend / Upstash / Plausible / NEXT_PUBLIC_*
+
+### 构建与发布流程
+- **自动发布**：推送 `v*` 标签自动触发 GitHub Release + Docker Hub 发布
+- **本地构建**：
+  ```bash
+  make docker-build            # 构建镜像 index-home:latest
+  make docker-run              # 后台运行，映射 3000
+  make compose-up              # 使用 docker compose up -d
+  ```
+- **手动发布**：
+  ```bash
+  # 发布新版本（自动构建 + 推送 Docker 镜像）
+  make release TAG=v1.0.3
+  ```
+
+### Docker Compose 部署
+参考 `docker-compose.yml` 和 `docker/README.md`：
+```bash
+# 使用预构建镜像
+docker-compose up -d
+
+# 本地构建版本
+docker-compose -f docker-compose.dev.yml up -d
+```
 - **Vercel 部署**：
   - 默认兼容；需要在 Settings → Environment Variables 配置 `REVALIDATE_SECRET` 等密钥。
   - 可选开启 `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` 以启用分析脚本。
