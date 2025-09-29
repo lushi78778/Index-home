@@ -1,16 +1,25 @@
+/**
+ * @file 语雀 (Yuque) Open API 访问与缓存工具
+ * @description
+ * - 提供获取用户公开知识库、文档列表、文档详情、目录（TOC）、搜索等功能。
+ * - 统一封装请求，支持 ISR（增量静态再生）缓存时间配置。
+ * - 内置基于 Promise 的 LRU 缓存（带 TTL 与失败短路）以减少详情请求压力。
+ */
 import 'server-only'
 
+// 知识库（Book）模型，简化常用字段
 type YuqueRepo = {
   id: number
   name: string
   slug: string
-  namespace: string // login/slug
+  namespace: string // 命名空间，格式为 login/slug
   description?: string
   updated_at: string
-  type?: string // expect 'Book' for knowledge base
-  public?: number // 1 for public
+  type?: string // 资源类型，知识库通常为 'Book'
+  public?: number // 是否公开，1 表示公开
 }
 
+// 文档模型（列表项）
 type YuqueDoc = {
   id: number
   title: string
@@ -28,12 +37,14 @@ type YuqueDoc = {
   first_published_at?: string
 }
 
+// 文档详情（含 body/body_html）
 type YuqueDocDetail = YuqueDoc & {
-  body?: string // markdown
+  body?: string // 文档的 Markdown 原文内容
   body_html?: string
   format?: 'markdown' | 'lake' | string
 }
 
+// 接口基址与 Token 由环境变量注入
 const BASE = process.env.YUQUE_BASE || 'https://www.yuque.com/api/v2'
 const TOKEN = process.env.YUQUE_TOKEN || ''
 // 统一控制对语雀 API 的 ISR 缓存时间（秒），默认 10 分钟，可通过环境变量覆盖
@@ -44,10 +55,11 @@ const FETCH_REVALIDATE = Math.max(
 const SHOULD_LOG = process.env.NODE_ENV !== 'test'
 
 if (!TOKEN) {
-  // 在构建或开发时给出一次提示，但不抛错，允许无 Token 环境继续构建
+  // 构建或开发时提醒，但不阻断：允许在无 Token 环境下继续构建
   console.warn('[yuque] YUQUE_TOKEN 未配置，无法调用语雀开放 API。')
 }
 
+// 带 ISR revalidate 的统一请求封装
 async function yqFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${BASE}${path}`
   const headers: Record<string, string> = {
@@ -69,10 +81,35 @@ async function yqFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return data.data ?? data
 }
 
+export type YuqueRawResponse = {
+  status: number
+  statusText: string
+  text: string
+}
+
+export async function fetchYuqueRawResponse(
+  path: string,
+  init?: RequestInit,
+): Promise<YuqueRawResponse> {
+  const url = `${BASE}${path}`
+  const headers: Record<string, string> = {
+    'User-Agent': 'index-home-yuque-debug',
+    Accept: 'application/json',
+  }
+  if (TOKEN) headers['X-Auth-Token'] = TOKEN
+  const res = await fetch(url, {
+    cache: 'no-store',
+    ...init,
+    headers: { ...headers, ...(init?.headers as any) },
+  })
+  const text = await res.text()
+  return { status: res.status, statusText: res.statusText, text }
+}
+
 // 缓存：namespace -> repo id（减少重复查询）
 const repoIdCache = new Map<string, number>()
 
-// 详情缓存：LRU + TTL + 失败短路
+// 详情缓存：LRU + TTL + 失败短路（值使用 Promise 以并发去重）
 class LRUCache<K, V> {
   private max: number
   private map: Map<K, { v: V; expireAt: number }>
@@ -138,7 +175,7 @@ async function getRepoIdByNamespace(namespace: string): Promise<number | undefin
   if (!namespace) return undefined
   if (repoIdCache.has(namespace)) return repoIdCache.get(namespace)!
   try {
-    // GET /repos/:namespace 返回单个知识库信息
+    // 调用 GET /repos/:namespace 获取单个知识库信息
     const info = await yqFetch<YuqueRepo>(`/repos/${encodeURIComponent(namespace)}`)
     if (info?.id) {
       repoIdCache.set(namespace, info.id)
@@ -199,7 +236,7 @@ export async function listUserPublicRepos(login: string): Promise<YuqueRepo[]> {
 export async function listRepoDocs(namespace: string, repoId?: number): Promise<YuqueDoc[]> {
   let source: 'namespace' | 'repoId' = 'namespace'
   try {
-    // GET /repos/:namespace/docs
+    // 调用 GET /repos/:namespace/docs 获取文档列表
     const resp = await yqFetch<any>(`/repos/${encodeURIComponent(namespace)}/docs?include_hits=1`)
     let docs = Array.isArray(resp) ? resp : Array.isArray(resp?.data) ? resp.data : []
     if (!Array.isArray(docs) || docs.length === 0) {
@@ -552,7 +589,7 @@ export async function debugProbe(login: string): Promise<{
 // —— 搜索 ——
 export type YuqueSearchItem = {
   id: number
-  type: string // expect 'Doc'
+  type: string // 类型字段，语雀文章通常为 'Doc'
   title: string
   summary?: string
   target_type?: string
