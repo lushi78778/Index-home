@@ -110,3 +110,5 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
           repository: lushi78778/index-home
           readme-filepath: ./docker/README.md
+          short-description: "Next.js 14 内容门户系统，支持语雀集成、MDX 内容、PWA 等功能"
+        continue-on-error: true
