@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @file 搜索页客户端组件
+ * @description 支持本地静态索引与语雀搜索的联合结果，提供键盘导航与高亮。
+ */
+
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -149,10 +154,7 @@ export function SearchClient() {
                 const meta: string[] = []
                 if (d.namespace) meta.push(d.namespace)
                 if (d.createdAt) meta.push(`发布 ${formatDateTime(d.createdAt)}`)
-                if (d.updatedAt && d.updatedAt !== d.createdAt)
-                  meta.push(`更新 ${formatDateTime(d.updatedAt)}`)
                 if (typeof d.wordCount === 'number') meta.push(`${d.wordCount} 字`)
-                if (typeof d.hits === 'number') meta.push(`${d.hits} 次浏览`)
                 return (
                   <span className="text-muted-foreground">
                     {meta.length > 0 ? meta.join(' · ') : null}

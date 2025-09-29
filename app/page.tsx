@@ -1,6 +1,10 @@
+/**
+ * @file 首页 (Home Page)
+ * @description 展示个人信息、常用入口、最近文章、精选项目，以及结构化数据标记。
+ */
 import Link from 'next/link'
 import { getAllProjects } from '@/lib/content'
-import { listAllPublicDocs, listUserPublicRepos, ensureViews } from '@/lib/yuque'
+import { listAllPublicDocs, listUserPublicRepos } from '@/lib/yuque'
 import { siteConfig } from '@/config/site'
 import { formatDateTime } from '@/lib/datetime'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,31 +33,11 @@ export default async function HomePage() {
     title: it.doc.title,
     repo: repoNameMap.get(it.namespace) || it.repo || it.namespace.split('/')[1],
     createdAt: it.doc.created_at,
-    updatedAt: it.doc.updated_at,
+    // 不再展示更新时间与浏览量，保留发布与可选字数
     wordCount: typeof it.doc.word_count === 'number' ? it.doc.word_count : undefined,
-    readCount: typeof it.doc.read_count === 'number' ? it.doc.read_count : undefined,
-    hits: typeof it.doc.hits === 'number' ? it.doc.hits : undefined,
   }))
 
-  // 统一浏览量：对首页列表也进行回填，保证与详情一致
-  if (posts.length) {
-    // 按 namespace 分组批量补齐，减少调用次数
-    const groupMap = new Map<string, typeof posts>()
-    for (const p of posts) {
-      if (!groupMap.has(p.namespace)) groupMap.set(p.namespace, [])
-      groupMap.get(p.namespace)!.push(p)
-    }
-    for (const [ns, arr] of groupMap) {
-      const hints = Object.fromEntries(
-        arr.map((p) => [p.slugOnly, { read_count: p.readCount, hits: p.hits }]),
-      )
-      const viewMap = await ensureViews(ns, arr.map((p) => p.slugOnly), hints)
-      for (const p of arr) {
-        const v = viewMap[p.slugOnly]
-        if (typeof v === 'number') p.readCount = v
-      }
-    }
-  }
+  // 已移除浏览量回填逻辑
   const projects = getAllProjects().slice(0, 4)
   return (
     <div className="space-y-10">
@@ -150,16 +134,8 @@ export default async function HomePage() {
                 <div className="shrink-0 text-xs text-muted-foreground flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
                   <span className="hidden sm:inline text-muted-foreground/80">{p.repo}</span>
                   <span>发布 {formatDateTime(p.createdAt)}</span>
-                  {p.updatedAt && p.updatedAt !== p.createdAt && (
-                    <span className="text-muted-foreground/70">
-                      更新 {formatDateTime(p.updatedAt)}
-                    </span>
-                  )}
                   <span className="flex gap-2">
                     {typeof p.wordCount === 'number' && <span>{p.wordCount} 字</span>}
-                    {typeof p.readCount === 'number'
-                      ? <span>{p.readCount} 次浏览</span>
-                      : typeof p.hits === 'number' && <span>{p.hits} 次浏览</span>}
                   </span>
                 </div>
               </li>

@@ -1,5 +1,13 @@
 'use client'
 
+/**
+ * @file 命令面板（全局搜索）提供者
+ * @description 提供 Ctrl/⌘+K 唤起的命令面板，包括：
+ * - 加载静态搜索索引（/api/search-index）并构建 MiniSearch
+ * - 联合语雀搜索（/api/yuque-search）
+ * - 高亮、摘要生成与键盘导航（↑/↓/Enter/Esc）
+ */
+
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
@@ -110,7 +118,7 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
     return mini.search(q).map((hit) => hit as unknown as SearchDoc)
   })()
 
-  // keyboard navigation for results
+  // 处理结果列表的键盘导航逻辑
   useEffect(() => {
     if (!visible) return
     function onKey(e: KeyboardEvent) {
@@ -198,10 +206,7 @@ export function CommandProvider({ children }: { children: React.ReactNode }) {
                             const metaParts: string[] = []
                             if (d.namespace) metaParts.push(d.namespace)
                             if (d.createdAt) metaParts.push(`发布 ${formatDateTime(d.createdAt)}`)
-                            if (d.updatedAt && d.updatedAt !== d.createdAt)
-                              metaParts.push(`更新 ${formatDateTime(d.updatedAt)}`)
                             if (typeof d.wordCount === 'number') metaParts.push(`${d.wordCount} 字`)
-                            if (typeof d.hits === 'number') metaParts.push(`${d.hits} 次浏览`)
                             const metaText = metaParts.join(' · ')
                             return (
                               <>

@@ -15,8 +15,7 @@ type InlineDoc = {
   updatedAt?: string
   wordCount?: number
   hits?: number
-  likes?: number
-  comments?: number
+  // 喜欢/评论已不再展示
 }
 
 export function InlineTocPanel({
@@ -60,12 +59,8 @@ export function InlineTocPanel({
           const href = `/blog/${namespace}/${doc.slug}`
           const metaParts: string[] = []
           if (doc.createdAt) metaParts.push(`发布 ${formatDateTime(doc.createdAt)}`)
-          if (doc.updatedAt && doc.updatedAt !== doc.createdAt)
-            metaParts.push(`更新 ${formatDateTime(doc.updatedAt)}`)
           if (typeof doc.wordCount === 'number') metaParts.push(`${doc.wordCount} 字`)
-          if (typeof doc.hits === 'number') metaParts.push(`${doc.hits} 次浏览`)
-          if (typeof doc.likes === 'number') metaParts.push(`${doc.likes} 喜欢`)
-          if (typeof doc.comments === 'number') metaParts.push(`${doc.comments} 评论`)
+          // 喜欢/评论已在非正文区域移除展示
 
           return (
             <li key={doc.slug}>
@@ -77,7 +72,7 @@ export function InlineTocPanel({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="truncate font-medium">{doc.title || doc.slug}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {formatDateTime(doc.updatedAt || doc.createdAt)}
+                    {doc.createdAt ? formatDateTime(doc.createdAt) : ''}
                   </span>
                 </div>
                 {metaParts.length > 0 && (

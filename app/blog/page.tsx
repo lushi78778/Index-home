@@ -1,10 +1,9 @@
-import {
-  listAllPublicDocs,
-  listUserPublicRepos,
-  listRepoToc,
-  buildTocTree,
-  ensureViews,
-} from '@/lib/yuque'
+/**
+ * 博客索引页（/blog）
+ * - 聚合语雀账号下所有公开文档，按知识库分组并支持默认展开配置
+ * - 结合目录树与文档元信息渲染列表，移除浏览量等多余统计
+ */
+import { listAllPublicDocs, listUserPublicRepos, listRepoToc, buildTocTree } from '@/lib/yuque'
 import BlogGroupsPersist from '@/components/site/blog-groups-persist'
 import Link from 'next/link'
 import { formatDateTime } from '@/lib/datetime'
@@ -96,29 +95,7 @@ export default async function BlogIndex() {
             // 获取该知识库目录结构
             const tocRaw = await listRepoToc(g.namespace, { repoId: g.repo?.id })
             const tocTree = buildTocTree(tocRaw)
-            // 统一浏览量：预先为该知识库的叶子 slug 做回填
-            const collectLeafSlugs = (nodes: ReturnType<typeof buildTocTree>): string[] => {
-              const out = new Set<string>()
-              const walk = (arr: any[]) => {
-                for (const n of arr || []) {
-                  const hasChildren = !!(n.children && n.children.length)
-                  const slugFromUrl = (n.url || '').split('/').filter(Boolean).slice(-1)[0]
-                  const finalSlug = (n.slug || slugFromUrl || '').trim()
-                  const isDocLike = ['DOC', 'Mind'].includes(String(n.type || '')) || !!finalSlug
-                  if (!hasChildren && isDocLike && finalSlug) out.add(finalSlug)
-                  if (hasChildren) walk(n.children)
-                }
-              }
-              walk(nodes)
-              return Array.from(out)
-            }
-            const leafSlugs = collectLeafSlugs(tocTree)
-            const hintMap = Object.fromEntries(
-              g.docs.map((it: any) => [it.doc.slug, { read_count: it.doc.read_count, hits: it.doc.hits }]),
-            )
-            const viewsMap = leafSlugs.length
-              ? await ensureViews(g.namespace, leafSlugs, hintMap)
-              : {}
+            // 视图计数相关已移除：不再预取/显示浏览量
 
             return (
               <section key={g.namespace} id={id} className="rounded-md border p-2">
@@ -144,7 +121,6 @@ export default async function BlogIndex() {
                         namespace={g.namespace}
                         nodes={tocTree}
                         stats={new Map(g.docs.map((it) => [it.doc.slug, it]))}
-                        viewMap={viewsMap}
                       />
                     ) : (
                       <ul className="space-y-2">
@@ -158,25 +134,10 @@ export default async function BlogIndex() {
                             </Link>
                             <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-2">
                               <span>发布 {formatDateTime(it.doc.created_at)}</span>
-                              {it.doc.updated_at && it.doc.updated_at !== it.doc.created_at && (
-                                <span className="text-muted-foreground/70">
-                                  更新 {formatDateTime(it.doc.updated_at)}
-                                </span>
-                              )}
                               {typeof it.doc.word_count === 'number' && (
                                 <span>{it.doc.word_count} 字</span>
                               )}
-                              {(() => {
-                                const v = viewsMap?.[it.doc.slug]
-                                const views = typeof it.doc.read_count === 'number' ? it.doc.read_count : v ?? it.doc.hits
-                                return typeof views === 'number' ? <span>{views} 次浏览</span> : null
-                              })()}
-                              {typeof it.doc.likes_count === 'number' && (
-                                <span>{it.doc.likes_count} 喜欢</span>
-                              )}
-                              {typeof it.doc.comments_count === 'number' && (
-                                <span>{it.doc.comments_count} 评论</span>
-                              )}
+                              {/* 喜欢/评论已在非正文区域移除展示 */}
                             </div>
                           </li>
                         ))}
@@ -197,12 +158,10 @@ function TocList({
   namespace,
   nodes,
   stats,
-  viewMap,
 }: {
   namespace: string
   nodes: ReturnType<typeof buildTocTree>
   stats: Map<string, any>
-  viewMap?: Record<string, number | undefined>
 }) {
   return (
     <ul className="space-y-2">
@@ -221,7 +180,7 @@ function TocList({
                     {n.title}
                   </summary>
                   <div className="ml-4 border-l pl-3 mt-2">
-                    <TocList namespace={namespace} nodes={n.children!} stats={stats} viewMap={viewMap} />
+                    <TocList namespace={namespace} nodes={n.children!} stats={stats} />
                   </div>
                 </details>
               )
@@ -230,8 +189,6 @@ function TocList({
             if (isDocLike && finalSlug) {
               const info = n.slug ? (stats.get(n.slug) as any) : undefined
               const doc = info?.doc ?? {}
-              const v = viewMap?.[finalSlug]
-              const views = typeof doc.read_count === 'number' ? doc.read_count : v ?? doc.hits
               return (
                 <div className="rounded border px-3 py-2 flex items-center justify-between hover:bg-accent/30 transition-colors">
                   <Link
@@ -241,26 +198,12 @@ function TocList({
                   >
                     {n.title}
                   </Link>
-                  {(doc.created_at ||
-                    doc.updated_at ||
-                    typeof doc.word_count === 'number' ||
-                    typeof views === 'number' ||
-                    typeof doc.likes_count === 'number' ||
-                    typeof doc.comments_count === 'number') && (
+                  {(doc.created_at || typeof doc.word_count === 'number') && (
                     <div className="shrink-0 text-xs text-muted-foreground flex flex-wrap gap-2 justify-end">
                       {doc.created_at && <span>发布 {formatDateTime(doc.created_at)}</span>}
-                      {doc.updated_at && doc.updated_at !== doc.created_at && (
-                        <span className="text-muted-foreground/70">
-                          更新 {formatDateTime(doc.updated_at)}
-                        </span>
-                      )}
                       {typeof doc.word_count === 'number' && <span>{doc.word_count} 字</span>}
-                      {typeof views === 'number' && <span>{views} 次浏览</span>}
                       {doc.type === 'Mind' && <span>思维导图</span>}
-                      {typeof doc.likes_count === 'number' && <span>{doc.likes_count} 喜欢</span>}
-                      {typeof doc.comments_count === 'number' && (
-                        <span>{doc.comments_count} 评论</span>
-                      )}
+                      {/* 喜欢/评论已在非正文区域移除展示 */}
                     </div>
                   )}
                 </div>
