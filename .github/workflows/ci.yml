@@ -2,60 +2,55 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Prepare config (fallback to example)
+        run: |
+          if [ ! -f config.yaml ]; then
+            cp config.example.yaml config.yaml
+          fi
+
       - name: Generate config
         run: npm run config
+
       - name: Typecheck
         run: npm run typecheck
+
       - name: Lint
         run: npm run lint
+
       - name: Unit tests
         run: npm test --silent
+
       - name: Build
-        run: npm run build
-      - name: Security audit (non-zero only for production deps)
-        run: npm audit --omit=dev || true
-name: CI
+        run: npm run build --silent
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test --silent
-      - run: npm run build --silent
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
+
       - name: Run Playwright E2E
         env:
           CI: true
         run: npx playwright test
+
       - name: Upload Playwright Artifacts
         if: failure()
         uses: actions/upload-artifact@v4
@@ -64,5 +59,6 @@ jobs:
           path: |
             playwright-report
             test-results
+
       - name: Run Lighthouse CI
         run: npx lhci autorun --collect.numberOfRuns=1
