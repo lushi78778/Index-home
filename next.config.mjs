@@ -30,17 +30,7 @@ const nextConfig = {
     // 启用类型化路由，可以为内部链接提供更好的类型提示和自动补全
     typedRoutes: true,
   },
-  // 为了解决第三方 CDN（如语雀 cdn.nlark.com）基于 Referer 的防盗链导致的 403，
-  // 统一下发 Referrer-Policy: no-referrer，让浏览器在发起跨站资源请求时不携带 Referer。
-  // 这通常能绕开“denied by Referer ACL”。
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
-      },
-    ]
-  },
+  // 引用策略（Referrer-Policy）已在 middleware 中统一配置，避免重复维护
   // 永久重定向：将旧的 /yuque 路径统一到 /blog，利于 SEO 与链接一致性
   async redirects() {
     return [
@@ -68,9 +58,9 @@ const applyPlugins = (cfg) => {
   const configWithMDX = withMDX(cfg)
 
   // 然后应用 PWA 插件
-  // PWA 功能仅在生产环境中启用，以避免影响开发体验
+  // 仅在生产环境启用 PWA，避免影响开发体验
   const configWithPWA = withPWA({
-    dest: 'public', // Service Worker 和相关文件的输出目录
+    dest: 'public', // 将 Service Worker（离线脚本）及相关文件输出到该目录
     disable: process.env.NODE_ENV === 'development', // 在开发环境中禁用 PWA
     register: true, // 自动注册 Service Worker
     skipWaiting: true, // 新的 Service Worker 安装后立即激活，跳过等待
@@ -146,7 +136,7 @@ const applyPlugins = (cfg) => {
 }
 
 // 导出最终配置
-// 插件的应用顺序是：基础配置 -> MDX -> PWA -> 国际化
-// 这种链式调用确保了每个插件都能正确地修改和扩展配置
+// 插件应用顺序：基础配置 -> MDX -> PWA -> 国际化（next-intl）
+// 链式调用确保每个插件都能依次修改/扩展配置；
 // 启用 next-intl 插件（指向 src/i18n/config.ts），以便在 RSC 环境加载消息与 locale。
 export default createNextIntlPlugin('./src/i18n/config.ts')(applyPlugins(nextConfig))

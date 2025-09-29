@@ -13,9 +13,9 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server'
-import { siteConfig } from './src/config/site'
+import { siteConfig } from '@/config/site'
 
-// 简易的 Locale 协商：优先 Cookie，其次 Accept-Language，最后默认语言。
+// 简易的语言协商（Locale）：优先 Cookie，其次 Accept-Language，最后默认语言。
 function detectLocale(req: NextRequest): string {
   const cookieLocale = req.cookies.get('NEXT_LOCALE')?.value
   if (cookieLocale && siteConfig.locales.includes(cookieLocale as any)) {
@@ -38,7 +38,7 @@ function detectLocale(req: NextRequest): string {
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // 1) 若 URL 以 /zh 或 /en 等前缀访问，则做 308 重定向到“无前缀”版本，并设置 Cookie
+  // 1) 若 URL 以 /zh 或 /en 等前缀访问，则进行 308 永久重定向到“无前缀”版本，并设置 Cookie
   const match = pathname.match(/^\/(\w{2})(\/.*)?$/)
   if (match) {
     const maybeLocale = match[1]
@@ -65,12 +65,19 @@ export function middleware(req: NextRequest) {
   // 持久化到 Cookie，便于后续请求
   res.cookies.set('NEXT_LOCALE', locale, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' })
 
-  // 2. 接下来，为响应添加安全头。
-  // 使用 Web Crypto API 生成一个安全的、一次性的 nonce 值。
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+  // 2. 接下来，为响应添加安全相关的 HTTP 响应头。
+  // 使用 Web Crypto API 生成一个安全的、一次性的 nonce 值（Edge/Node 通用）。
+  const nonce = (() => {
+    try {
+      if (typeof globalThis.crypto?.randomUUID === 'function') {
+        return globalThis.crypto.randomUUID().replace(/-/g, '')
+      }
+    } catch {}
+    // 回退：尽可能生成足够随机的 token（仅用于开发环境）
+    return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+  })()
 
-  // 定义内容安全策略 (CSP) 的指令。
-  // 这是一个白名单机制，只允许从指定的来源加载资源。
+  // 定义内容安全策略 (CSP) 的指令：白名单机制，仅允许从指定的来源加载资源。
   const cspDirectives = [
     "default-src 'self'", // 默认策略：只信任同源内容。
     // 脚本来源：允许同源与 Plausible 的脚本。
@@ -86,8 +93,12 @@ export function middleware(req: NextRequest) {
     "form-action 'self'", // 表单提交目标：只允许提交到同源。
     "base-uri 'self'", // 限制 `<base>` 标签的 URL。
     "object-src 'none'", // 禁止使用 `<object>`, `<embed>`, `<applet>` 标签。
-    'upgrade-insecure-requests', // 自动将 http 请求升级为 https。
   ]
+
+  // 仅当当前请求为 HTTPS 时，才启用自动升级不安全请求，避免在本地 http://localhost 开发环境中导致 Safari 升级到 https://localhost 失败而不加载样式的问题。
+  if (req.nextUrl.protocol === 'https:') {
+    cspDirectives.push('upgrade-insecure-requests')
+  }
 
   const csp = cspDirectives.join('; ')
 
@@ -99,7 +110,11 @@ export function middleware(req: NextRequest) {
   res.headers.set('Referrer-Policy', 'no-referrer')
   res.headers.set('X-Content-Type-Options', 'nosniff')
   res.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
-  res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+  // 仅在 HTTPS 环境下设置 HSTS，避免在本地 http://localhost 开发时浏览器记住 HSTS 导致强制跳转到 https://localhost
+  if (req.nextUrl.protocol === 'https:') {
+    res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+  }
+  res.headers.set('Cross-Origin-Resource-Policy', 'same-origin')
 
   return res
 }
