@@ -2,7 +2,7 @@ import { ImageResponse } from '@vercel/og'
 import { getAllProjects } from '@/lib/content'
 import { siteConfig } from '@/config/site'
 
-// Node.js runtime because we read local content
+// 指定 Node.js 运行时以便读取本地内容文件
 export const runtime = 'nodejs'
 
 export async function GET(_: Request, { params }: { params: { slug: string } }) {

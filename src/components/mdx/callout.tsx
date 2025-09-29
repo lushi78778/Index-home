@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @file Callout 提示块
+ * @description 在文章中以信息/技巧/注意/警告/注记等样式展示强调内容。
+ */
+
 import { AlertCircle, Info, Lightbulb, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

@@ -1,3 +1,7 @@
+/**
+ * @file 页脚
+ * @description 展示版权信息、联系入口、备案信息；可选显示悬浮备案条目。
+ */
 import Link from 'next/link'
 import { siteConfig } from '@/config/site'
 

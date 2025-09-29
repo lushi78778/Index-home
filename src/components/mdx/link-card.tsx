@@ -1,3 +1,7 @@
+/**
+ * @file LinkCard 链接卡片
+ * @description 用卡片化样式展示外链或站内链接，外链新开窗口。
+ */
 import Link from 'next/link'
 
 export function LinkCard({

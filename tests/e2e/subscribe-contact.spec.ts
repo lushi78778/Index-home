@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-// Mock helper: intercept API calls
+// 模拟接口：拦截 API 请求并返回成功响应
 async function mockNewsletterSuccess(page: import('@playwright/test').Page) {
   await page.route('**/api/newsletter', async (route) => {
     await route.fulfill({
@@ -26,7 +26,7 @@ test('subscribe form submits and shows toast', async ({ page }) => {
   await page.goto('/subscribe')
   await page.locator('input[name="email"]').fill('user@example.com')
   await page.getByRole('button', { name: '订阅' }).click()
-  // toast visible
+  // 断言提示条展示成功文案
   await expect(page.locator('div[role="status"]')).toContainText('订阅成功')
 })
 

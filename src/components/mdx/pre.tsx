@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @file 代码块容器（带复制按钮）
+ * @description 包装 <pre> 并提供复制代码到剪贴板的能力。
+ */
+
 import * as React from 'react'
 
 export function Pre(props: React.HTMLAttributes<HTMLPreElement>) {

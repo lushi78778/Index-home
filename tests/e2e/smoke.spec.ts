@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test('home → blog → post smoke + a11y (basic)', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('main')).toBeVisible()
-  // minimal a11y signal using Accessibility Tree (works under strict CSP)
+  // 使用可访问性树的最小无障碍校验信号（在严格 CSP 下可用）
   const homeAX = await page.accessibility.snapshot({ interestingOnly: true })
   expect(homeAX).toBeTruthy()
   expect(

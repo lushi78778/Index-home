@@ -1,3 +1,7 @@
+/**
+ * @file Aside 侧注块
+ * @description 在正文旁展示补充信息的装饰性内容区域。
+ */
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
