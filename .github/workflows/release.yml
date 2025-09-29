@@ -102,3 +102,11 @@ jobs:
             BUILDTIME=${{ fromJSON(steps.docker-meta.outputs.json).labels['org.opencontainers.image.created'] }}
             VERSION=${{ fromJSON(steps.docker-meta.outputs.json).labels['org.opencontainers.image.version'] }}
             REVISION=${{ fromJSON(steps.docker-meta.outputs.json).labels['org.opencontainers.image.revision'] }}
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          repository: lushi78778/index-home
+          readme-filepath: ./docker/README.md
