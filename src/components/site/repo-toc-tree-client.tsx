@@ -98,8 +98,7 @@ export function RepoTocTreeClient({
       }
       setOpenSet(s)
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [namespace])
+  }, [currentSlug, nodes, storageKey])
 
   // 持久化展开项
   useEffect(() => {

@@ -246,7 +246,7 @@ async function main() {
       await fsp.unlink(full)
       console.log(`- 移除过期项目：${file}`)
     } catch {
-      // ignore
+      // 忽略读取/删除失败，避免脚本中断
     }
   }
 

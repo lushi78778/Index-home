@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @file 轻量通知（Toast）
+ * @description 通过上下文在全局展示临时消息，支持自动关闭与手动关闭。
+ */
+
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 
 type Toast = {
