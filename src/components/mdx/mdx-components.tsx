@@ -1,3 +1,8 @@
+/**
+ * @file MDX 组件映射
+ * @description 定义文章内使用的自定义组件与默认元素渲染规则（如 a/img/blockquote/table 等），
+ * 统一样式与行为（外链新开、图片策略、表格滚动等）。
+ */
 import * as React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -7,7 +12,7 @@ import { Figure } from './figure'
 import { LinkCard } from './link-card'
 import { Aside } from './aside'
 import { Kbd } from './kbd'
-import { YouTube } from './youtube'
+// （已移除 YouTube 组件，若需要可按需恢复）
 
 // 自定义 MDX 组件映射：用于控制文章内元素的样式与行为
 export const mdxComponents = {
@@ -19,7 +24,6 @@ export const mdxComponents = {
   LinkCard,
   Aside,
   Kbd,
-  YouTube,
   a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
     const href = props.href || '#'
     // 外链新窗口打开，内链使用 next/link
@@ -48,7 +52,7 @@ export const mdxComponents = {
   img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
     // 优先使用 next/image；若未提供宽高，回退到原生 img
     if (props.width && props.height) {
-      // eslint-disable-next-line @next/next/no-img-element
+      /* eslint-disable-next-line @next/next/no-img-element */
       return (
         <Image
           src={props.src || ''}
@@ -64,7 +68,7 @@ export const mdxComponents = {
         />
       )
     }
-    // eslint-disable-next-line @next/next/no-img-element
+    /* eslint-disable-next-line @next/next/no-img-element */
     return (
       <img
         {...props}
