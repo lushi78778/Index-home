@@ -25,7 +25,7 @@ REVALIDATE_PATH ?= /
 
 curl_endpoint = @curl -fsS "http://$(HOST):$(PORT)$(1)"
 
-.PHONY: help setup install config env dev build start preview typecheck lint lint-fix format format-check test test-watch e2e e2e-ui check ci lhci analyze clean clean-all sync-projects yuque-health yuque-search yuque-toc yuque-toc-raw revalidate sitemap rss search-index stop stop-ports docker-build docker-run docker-stop compose-up compose-down compose-restart pw-install doctor
+.PHONY: help setup install config env dev build start preview typecheck lint lint-fix format format-check test test-watch e2e e2e-ui check ci lhci analyze clean clean-all sync-projects yuque-health yuque-search yuque-toc yuque-toc-raw revalidate sitemap rss search-index stop stop-ports docker-build docker-run docker-stop compose-up compose-down compose-restart pw-install doctor release tag push-tags changelog
 
 help: ##@general 显示分组后的帮助信息
 	@printf "用法: make <目标>\n"
@@ -184,6 +184,31 @@ doctor: ##@maintenance 快速检查本地环境（Node、npm、yaml、Playwright
 	printf "npm:   "; npm -v 2>/dev/null || echo missing; \
 	printf "yaml:  "; node --input-type=module -e "import('yaml').then(()=>process.stdout.write('ok')).catch(()=>process.stdout.write('missing'))" 2>/dev/null || true; echo; \
 	printf "Playwright: "; npx --yes playwright --version 2>/dev/null || echo missing
+
+# --- Release ---------------------------------------------------------------
+
+VERSION ?= $(shell node -p "require('./package.json').version")
+TAG ?= v$(VERSION)
+
+changelog: ##@release 生成简单的 CHANGELOG.md（追加顶部）
+	@{ \
+	  echo "# Changelog"; \
+	  echo ""; \
+	  if [ -f CHANGELOG.md ]; then sed '1,/^$/d' CHANGELOG.md || true; fi; \
+	} > CHANGELOG.new.md
+	@mv CHANGELOG.new.md CHANGELOG.md
+	@echo "→ CHANGELOG.md 更新完成"
+
+tag: ##@release 按 package.json 版本创建 git 标签（TAG 可覆盖）
+	@git tag -a $(TAG) -m "Release $(TAG)" || { echo "标签已存在或创建失败：$(TAG)"; exit 1; }
+	@echo "→ 已创建标签 $(TAG)"
+
+push-tags: ##@release 推送标签到远端
+	@git push --tags
+	@echo "→ 已推送标签到远端"
+
+release: ci tag push-tags ##@release 运行本地 CI 任务并创建/推送标签
+	@echo "→ 本地检查通过，已创建并推送标签 $(TAG)；GitHub Actions 将触发 release 工作流"
 
 # --- Docker -----------------------------------------------------------------
 

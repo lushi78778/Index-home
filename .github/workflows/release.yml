@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate config
+        run: npm run config
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test --silent
+
+      - name: Build
+        run: npm run build --silent
+
+      - name: Pack build artifact
+        id: pack
+        run: |
+          NAME="index-home-${GITHUB_REF_NAME}.tar.gz"
+          tar -czf "$NAME" \
+            .next \
+            public \
+            package.json \
+            package-lock.json \
+            next.config.mjs \
+            middleware.ts \
+            README.md \
+            Dockerfile \
+            docker-compose.yml \
+            Makefile
+          echo "file=$NAME" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          files: ${{ steps.pack.outputs.file }}
+          generate_release_notes: true
