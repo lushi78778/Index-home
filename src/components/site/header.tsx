@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @file 头部导航栏
+ * @description 展示站点导航、搜索入口、主题与语言切换，并适配移动端抽屉导航。
+ */
+
 import Link from 'next/link'
 import { siteConfig } from '@/config/site'
 import { ThemeToggle } from './theme-toggle'

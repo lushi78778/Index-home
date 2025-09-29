@@ -26,6 +26,7 @@ import { CommandProvider } from '@/components/site/command-provider'
 import { NextIntlClientProvider } from 'next-intl'
 import { setRequestLocale } from 'next-intl/server'
 import { JsonLd } from '@/components/site/json-ld'
+import { ConsentBanner } from '@/components/site/consent-banner'
 
 // 使用 next/font 优化字体加载。
 // 这会将 Inter 字体在构建时下载到服务器，并在加载时自托管，
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
   // 建议在前端也声明不发送 referrer，避免跨站资源 403。
   referrer: 'no-referrer',
   openGraph: {
-    // Open Graph (用于社交分享，如 Facebook, LinkedIn)
+    // 设定 Open Graph 配置（用于 Facebook、LinkedIn 等社交分享）
     title: siteConfig.name,
     description: siteConfig.description,
     url: siteConfig.url,
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
     images: [`${siteConfig.url}/opengraph-image`],
   },
   twitter: {
-    // Twitter Cards (用于在 Twitter 上分享)
+    // 配置 Twitter Cards（控制 Twitter 上的分享卡片展示）
     card: 'summary_large_image',
     title: siteConfig.name,
     description: siteConfig.description,
@@ -94,7 +95,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   setRequestLocale(locale)
 
   return (
-    // suppressHydrationWarning: 告诉 React 忽略 `<html>` 标签上因扩展程序等原因造成的属性不匹配警告
+    // 使用 suppressHydrationWarning，忽略浏览器扩展导致的 `<html>` 属性不匹配警告
     <html lang={locale} suppressHydrationWarning className={inter.className}>
       <body>
         {/* 注入 Plausible 分析脚本。仅当环境变量中配置了 domain 时生效。 */}
@@ -126,6 +127,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   {children}
                 </main>
                 <Footer />
+
+                {/* 全站底部提示：Cookie 与使用说明告知（非阻断、可关闭） */}
+                <ConsentBanner />
 
                 {/* 全站结构化数据：WebSite + SearchAction */}
                 <JsonLd
