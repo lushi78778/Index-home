@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  web:
+    image: index-home:latest
+    # 如果你希望 compose 自行构建镜像，取消下面两行的注释：
+    # build:
+    #   context: .
+    container_name: index-home
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # —— 构建期需要的公开变量（也可在构建时 bake 进去） ——
+      # 如果你使用预构建镜像并已将 NEXT_PUBLIC_* 打进客户端，可以不在此处声明
+      NEXT_PUBLIC_SITE_URL: "https://xray.top"
+      NEXT_PUBLIC_PLAUSIBLE_DOMAIN: "xray.top"
+
+      # —— 运行时服务端变量（建议在部署平台以 secret 方式管理） ——
+      REVALIDATE_SECRET: "REVALIDATE_SECRET_value"
+
+      # Resend / 联系表单
+      RESEND_API_KEY: "your-resend-key"
+      CONTACT_TO_EMAIL: "lushi78778@xray.top"
+
+      # Upstash Redis（如使用）
+      UPSTASH_REDIS_REST_URL: "https://your-upstash-url"
+      UPSTASH_REDIS_REST_TOKEN: "your-upstash-token"
+
+      # Newsletter（如使用）
+      RESEND_NEWSLETTER_AUDIENCE_ID: "RESEND_NEWSLETTER_AUDIENCE_ID_value"
+      NEWSLETTER_DOUBLE_OPT_IN: "true"
+      NEWSLETTER_FROM: "lushi78778 <noreply@xray.top>"
+
+      # GitHub 同步（可选）
+      GITHUB_TOKEN: "your-github-token"
+
+      # 语雀 API
+      YUQUE_TOKEN: "your-yuque-token"
+      YUQUE_LOGIN: "lushi78778"
+      YUQUE_INCLUDE_DRAFTS: "false"
+
+    # 如需只读文件系统，可开启（确保 .next 可读）
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
