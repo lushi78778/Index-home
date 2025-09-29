@@ -1,3 +1,8 @@
+/**
+ * @file 站内搜索工具
+ * @description 提供 MiniSearch 的统一构建与高亮/摘要工具，
+ * 与 /api/search-index 的索引结构保持一致，确保前后端契约稳定。
+ */
 import MiniSearch from 'minisearch'
 
 /**

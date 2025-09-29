@@ -22,7 +22,7 @@
 
     // "noEmit": true: 不生成输出文件（如 .js, .js.map）。
     // 在 Next.js 项目中，实际的编译和打包工作由 Next.js（内部使用 Babel）完成，
-    // tsc 只负责类型检查。
+    // 该编译步骤仅负责类型检查（由 tsc 执行）。
     "noEmit": true,
 
     // "esModuleInterop": true: 允许通过 `import React from 'react'` 的方式导入 CommonJS 模块，
@@ -48,7 +48,7 @@
     "jsx": "preserve",
 
     // "incremental": true: 启用增量编译。
-    // TypeScript 会在 `.tsbuildinfo` 文件中存储上次编译的信息，再次编译时只处理有变动的文件，从而加快速度。
+    // 编译器会在 `.tsbuildinfo` 文件中存储上次编译的信息，再次编译时只处理有变动的文件，从而加快速度。
     "incremental": true,
 
     // "baseUrl": ".": 设置模块解析的基础目录为项目根目录。
@@ -63,7 +63,8 @@
       "@/content/*": ["./content/*"],
       "@/config/*": ["./src/config/*"],
       "@/i18n/*": ["./src/i18n/*"],
-      "@/app/*": ["./app/*"]
+      "@/app/*": ["./app/*"],
+      "@/test-helpers/*": ["./src/test-helpers/*"]
     },
 
     // "types": [...]：明确指定需要包含在全局作用域中的类型定义包。

@@ -24,7 +24,7 @@ export default getRequestConfig(async () => {
     }
   } catch {}
   // 在不使用路径前缀的情况下（无 /en、/zh 段），`locale` 可能为空。
-  // 我们采用“Cookie -> 自定义请求头 -> Accept-Language -> 默认值”的顺序来解析。
+  // 解析顺序：Cookie -> 自定义请求头（x-locale）-> Accept-Language -> requestLocale() -> 默认值
   function resolveLocale(): string {
     // 1) 来自中间件设置的 Cookie
     try {
