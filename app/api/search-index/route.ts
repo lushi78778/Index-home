@@ -1,3 +1,8 @@
+/**
+ * @file API: 生成站内搜索索引
+ * @description 聚合语雀公开文档与本地项目，输出用于 MiniSearch 的轻量索引；
+ * 使用 ETag 与 Cache-Control 做基础缓存，配合路由 revalidate 降低压力。
+ */
 import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { getAllProjects } from '@/lib/content'
@@ -5,15 +10,16 @@ import { listAllPublicDocs } from '@/lib/yuque'
 
 export const revalidate = 3600 // 缓存 1 小时
 
+// 粗粒度移除 Markdown/HTML 标记，仅保留纯文本用于索引/摘要
 function stripMarkdown(md?: string) {
   if (!md) return ''
   return md
-    .replace(/```[\s\S]*?```/g, ' ') // code fences
-    .replace(/`[^`]+`/g, ' ') // inline code
-    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // markdown links -> text
-    .replace(/[#>*_~\-]+/g, ' ') // markdown tokens
-    .replace(/<[^>]+>/g, ' ') // rudimentary HTML removal
-    .replace(/\s+/g, ' ') // collapse spaces
+    .replace(/```[\s\S]*?```/g, ' ') // 去除代码块标记
+    .replace(/`[^`]+`/g, ' ') // 去除行内代码反引号
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // 链接语法仅保留可见文字
+    .replace(/[#>*_~\-]+/g, ' ') // 过滤常见 Markdown 控制字符
+    .replace(/<[^>]+>/g, ' ') // 简单移除 HTML 标签
+    .replace(/\s+/g, ' ') // 折叠多余空白字符
     .trim()
 }
 

@@ -1,35 +1,25 @@
+/**
+ * 订阅接口（POST /api/newsletter）
+ * - 功能：将邮箱加入 Resend 的受众列表；支持「双重确认（Double Opt-In）」模式
+ * - 速率限制：基于 Upstash Redis 的滑动窗口（同一 IP 5 分钟内最多 6 次）
+ * - 降级策略：
+ *   - 缺失 Redis/站点 URL/Resend 依赖时，直接写入受众列表（跳过确认邮件）
+ *   - 发送确认邮件失败时，亦回退为直接写入（保证用户可订阅）
+ * - 环境变量：
+ *   - UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN：用于限流与确认 Token 存储
+ *   - RESEND_API_KEY/RESEND_NEWSLETTER_AUDIENCE_ID：Resend API 与受众列表
+ *   - NEWSLETTER_DOUBLE_OPT_IN：开启双重确认（true/false）
+ *   - NEXT_PUBLIC_SITE_URL：用于生成确认链接
+ */
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { Ratelimit } from '@upstash/ratelimit'
-import { Redis } from '@upstash/redis'
 
+import { addAudienceContact } from '@/lib/resend'
+import { getClientIp } from '@/lib/server/request'
+import { enforceSlidingWindowRateLimit, getRedisClient } from '@/lib/server/ratelimit'
+
+// 后端校验：仅校验邮箱格式
 const Schema = z.object({ email: z.string().email() })
-const RESEND_AUDIENCES_ENDPOINT = 'https://api.resend.com/audiences'
-
-async function addContact({
-  email,
-  audienceId,
-  apiKey,
-}: {
-  email: string
-  audienceId: string
-  apiKey: string
-}) {
-  const res = await fetch(`${RESEND_AUDIENCES_ENDPOINT}/${audienceId}/contacts`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email }),
-  })
-  if (res.status === 409) return { ok: true }
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '')
-    return { ok: false as const, detail }
-  }
-  return { ok: true }
-}
 
 export async function POST(req: Request) {
   const data = await req.json()
@@ -38,44 +28,39 @@ export async function POST(req: Request) {
 
   const email = parsed.data.email
 
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local'
-  const redisUrl = process.env.UPSTASH_REDIS_REST_URL
-  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
-  if (redisUrl && redisToken) {
-    const redis = new Redis({ url: redisUrl, token: redisToken })
-    const ratelimit = new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(6, '5 m') })
-    const { success, reset, limit, remaining } = await ratelimit.limit(`newsletter:${ip}`)
-    if (!success) {
-      const nowSec = Math.floor(Date.now() / 1000)
-      const retryAfter = Math.max(1, (reset || nowSec) - nowSec)
-      const headers: Record<string, string> = { 'Retry-After': String(retryAfter) }
-      if (typeof limit === 'number') headers['X-RateLimit-Limit'] = String(limit)
-      if (typeof remaining === 'number') headers['X-RateLimit-Remaining'] = String(remaining)
-      return NextResponse.json(
-        { ok: false, error: 'rate_limited', reset },
-        { status: 429, headers },
-      )
-    }
+  const ip = getClientIp(req)
+  const rate = await enforceSlidingWindowRateLimit({
+    identifier: `newsletter:${ip}`,
+    limit: 6,
+    window: '5 m',
+  })
+  if (!rate.success) {
+    return NextResponse.json(
+      { ok: false, error: 'rate_limited', reset: rate.reset },
+      { status: 429, headers: rate.headers },
+    )
   }
 
   const resendKey = process.env.RESEND_API_KEY
   const audienceId = process.env.RESEND_NEWSLETTER_AUDIENCE_ID
   const doubleOptIn = process.env.NEWSLETTER_DOUBLE_OPT_IN === 'true'
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
+  const redis = getRedisClient()
 
+  // 缺少 Resend 关键配置时直接返回成功，避免阻塞前端体验
   if (!resendKey || !audienceId) {
     return NextResponse.json({ ok: true })
   }
 
   if (doubleOptIn) {
     const from = process.env.NEWSLETTER_FROM || 'Newsletter <noreply@example.com>'
-    if (!redisUrl || !redisToken || !siteUrl) {
-      // 环境不完整则降级为直接写入
+    if (!redis || !siteUrl) {
+      // 环境不完整：跳过确认流程，直接写入受众列表
     } else {
-      const redis = new Redis({ url: redisUrl, token: redisToken })
       const random = new Uint8Array(16)
       globalThis.crypto.getRandomValues(random)
       const token = Buffer.from(random).toString('base64url')
+      // 将确认 Token 与邮箱绑定，24 小时内有效
       await redis.set(`newsletter:confirm:${token}`, email, { ex: 60 * 60 * 24 })
       const confirmUrl = `${siteUrl}/subscribe/confirm?token=${encodeURIComponent(token)}`
       try {
@@ -90,12 +75,12 @@ export async function POST(req: Request) {
         })
         return NextResponse.json({ ok: true })
       } catch {
-        // 邮件失败则降级直接写入
+        // 邮件发送失败：回退为直接写入受众列表
       }
     }
   }
 
-  const result = await addContact({ email, apiKey: resendKey, audienceId })
+  const result = await addAudienceContact({ email, apiKey: resendKey, audienceId })
   if (!result.ok) {
     return NextResponse.json(
       { ok: false, error: 'upstream', detail: result.detail },

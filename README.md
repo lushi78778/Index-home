@@ -1,217 +1,443 @@
-# Index-home
+# Index-home 开发者手册
 
-现代化的个人站点脚手架，基于 **Next.js 14 App Router + TypeScript + Tailwind CSS + shadcn/ui + MDX**，并额外整合了语雀内容仓库。项目的设计目标是“内容集中、配置统一、可观测、可测试”，适合作为博客 / 项目集 / 作品集的长期基线。
+> 一套基于 Next.js App Router 的内容门户基线，支持 Yuque + 本地 MDX 双内容源、全链路自动化配置、完善的测试与运维工具集。
 
-> 建议初次接手时完整阅读本说明；文档覆盖了配置、内容来源、常用脚本、测试与部署要点。
-
----
-
-## 项目亮点
-
-- **双内容源并存**：
-  - 语雀开放 API：动态拉取公开知识库、目录、文章详情，并生成知识库索引页、侧边目录树、命令面板搜索。
-  - 本地 MDX 项目：用于项目展示，具备 Zod 校验与构建时缓存。
-- **全链路自动化**：统一的 `config.yaml` → `make config` 自动生成 `src/config/site.ts` 与 `.env.local`，减少配置漂移；Makefile 提供从开发到部署的日常任务。
-- **质量保障**：TypeScript 严格模式、ESLint、Prettier、Vitest、Playwright、Lighthouse；可在 CI 中串联执行。
-- **可观测性与安全性**：Upstash 限流、Resend 邮件发送、语雀健康探针、API 接口统一返回结构；默认启用 CSP、表单防刷、双重确认订阅。
-- **SEO / 访问体验**：自动生成 sitemap / RSS / JSON-LD / OG 图；命令面板、站内搜索、移动端导航等交互优化。
+本文档覆盖环境准备、目录结构、配置生成、常用工作流、质量保障、部署方案与故障排查。
 
 ---
 
-## 技术栈
-
-| 领域      | 选择                                 | 说明                                                            |
-| --------- | ------------------------------------ | --------------------------------------------------------------- |
-| 框架      | Next.js 14 App Router                | RSC + Edge/Node Route Handlers，ISR 默认 10 分钟                |
-| 语言      | TypeScript 5.x                       | `tsconfig.json` 启用严格模式、路径别名                          |
-| 样式      | Tailwind CSS 3.x + CSS 变量          | 与 shadcn/ui 组件库协同；自定义 `prose`、暗色主题               |
-| 内容      | 语雀 API、MiniSearch、MDX 项目       | 语雀知识库实时拉取；构建期生成静态搜索索引；本地 MDX 仅用于项目 |
-| 表单      | `react-hook-form` + `zod`            | 联系表单、订阅表单共享验证逻辑；服务端限流 + Resend 通知        |
-| 邮件      | Resend                               | 订阅、联系、双重确认、通知邮件                                  |
-| 缓存/限流 | Upstash Redis + Ratelimit            | REST API 防刷、订阅确认 token 存储                              |
-| 测试      | Vitest、Testing Library、Playwright  | 单测 + E2E，覆盖内容解析、API、关键页面流                       |
-| DevOps    | Makefile、Dockerfile、GitHub Actions | 本地脚本统一管理；CI 可串联类型检查→单测→构建→E2E→Lighthouse    |
+## 目录
+- [项目概览](#项目概览)
+- [技术栈与目录结构](#技术栈与目录结构)
+- [环境准备与体检](#环境准备与体检)
+- [配置与生成（configyaml--sitetsenvlocal）](#配置与生成configyaml--sitetsenvlocal)
+- [开发与调试（常用工作流）](#开发与调试常用工作流)
+- [Makefile 目标详解（中文注释版）](#makefile-目标详解中文注释版)
+- [内容来源（语雀--本地-mdx）](#内容来源语雀--本地-mdx)
+- [测试与质量（VitestPlaywrightLHCI）](#测试与质量vitestplaywrightlhci)
+- [API 路由与页面一览](#api-路由与页面一览)
+- [部署与运维（DockerCompose）](#部署与运维dockercompose)
+- [故障排查 FAQ（含命令示例）](#故障排查-faq含命令示例)
+- [安全与最佳实践](#安全与最佳实践)
+- [常用命令速查表（Cheat-Sheet）](#常用命令速查表cheat-sheet)
 
 ---
 
-## 目录速览
+## 项目概览
+- **定位**：个人/团队内容门户基线，兼容博客、作品集、团队站、语雀知识库等场景。
+- **核心特性**：
+  - 双源内容：语雀开放 API（实时内容）+ 本地 MDX（项目/专题），统一渲染与搜索。
+  - 配置即代码：使用 `config.yaml` 单一事实来源，通过脚本生成 TS 配置与 `.env.local`，杜绝漂移。
+  - 全链路质量：严格 TypeScript、ESLint/Prettier、Vitest 单测、Playwright E2E、LHCI 性能监测。
+  - 安全与可观测：CSP + 安全响应头、Upstash 限流、Resend 邮件与订阅、MiniSearch 本地索引、Plausible 分析。
+  - 工具链完善：Makefile、Docker、多环境部署清晰，内置健康检查与调试接口。
 
-```
+---
+
+## 技术栈与目录结构
+
+### 核心技术栈
+- **前端框架**：Next.js 14 (App Router, RSC, ISR, Edge Runtime)
+- **语言**：TypeScript 5 严格模式
+- **UI 与样式**：Tailwind CSS 3 + shadcn/ui 组件，支持明暗主题
+- **内容处理**：MDX (`@next/mdx`, `rehype-pretty-code`, `remark-gfm`)
+- **国际化**：`next-intl`（自定义中间件 + RootLayout 提供上下文）
+- **搜索**：MiniSearch 静态索引 + 语雀实时搜索联动
+- **通信与外部服务**：Resend 邮件、Upstash RateLimit/Redis、Yuque Open API
+- **测试**：Vitest (happy-dom) + Playwright + Lighthouse CI
+- **构建工具**：Makefile、Docker、多阶段构建；脚本使用 Node 原生 ES 模块
+
+### 目录结构总览
+
+```text
 .
-├── app/               # Next.js App Router 路由与 API
-│   ├── blog/          # 博客首页（语雀整合）、知识库索引、动态详情页
-│   ├── api/           # contact / newsletter / search-index / yuque-* 等接口
-│   ├── projects/      # 本地 MDX 项目列表与详情页
-│   └── ...
+├── app/                         # Next.js App Router（页面、API、静态路由）
+│   ├── page.tsx                 # 首页：语雀文章 + 项目精选 + 快捷入口
+│   ├── layout.tsx               # Root Layout：主题、i18n、命令面板、CSP nonce
+│   ├── head.tsx                 # 自定义 <head> 片段（可扩展 preconnect）
+│   ├── not-found.tsx            # 全局 404 文案
+│   ├── _offline/                # PWA 离线回退页面（Edge Runtime）
+│   ├── about/                   # 关于页（技能云来自项目数据）
+│   ├── blog/                    # 语雀文章索引 + 详情（按 namespace 分组）
+│   │   ├── page.tsx             # /blog 聚合页（TOC + 默认展开策略）
+│   │   └── [login]/[repo]/[slug]/page.tsx  # 语雀文档详情 SSR
+│   ├── projects/                # 本地 MDX 项目列表与详情
+│   │   ├── page.tsx             # /projects 支持标签/精选筛选
+│   │   └── [slug]/              # 动态项目详情、OpenGraph 图片、错误边界
+│   ├── tags/                    # 标签索引与标签详情页
+│   ├── search/                  # 全站搜索（静态索引 + 语雀实时结果）
+│   ├── contact/                 # 联系表单（蜜罐 + 再验证 + Resend）
+│   ├── subscribe/               # Newsletter 订阅 & 确认页
+│   ├── resume/                  # PDF 友好简历视图 + 打印按钮
+│   ├── policies/                # 站点条款与隐私页（可扩展）
+│   ├── icons/                   # 动态生成 PWA icons (192/512) 与兜底路由
+│   ├── manifest.webmanifest/    # PWA Manifest 动态生成
+│   ├── sitemap.xml/route.ts     # 站点地图（页面 + 语雀 + 项目 + 标签）
+│   ├── rss.xml/route.ts         # RSS Feed（语雀文章）
+│   ├── robots.txt/route.ts      # Robots 文件（按配置生成）
+│   ├── opengraph-image/         # 全局 Open Graph 动态图片
+│   └── api/                     # App Router API Routes（JSON/Edge/Node）
+│       ├── contact/route.ts     # 联系表单提交、限流、邮件通知
+│       ├── newsletter/          # 订阅 POST + GET 确认（Token 存 Redis）
+│       ├── revalidate/route.ts  # ISR 再验证（可指定 path）
+│       ├── search-index/route.ts# 静态搜索索引 JSON（支持 ETag）
+│       ├── yuque-search/route.ts# 语雀搜索代理（缓存 60s）
+│       └── yuque/...            # /health /toc /toc-raw 调试接口
+│
 ├── src/
-│   ├── components/    # 站点级组件、UI 组件、MDX 适配器
-│   ├── lib/           # 内容解析、语雀封装、搜索高亮等工具函数
-│   ├── config/        # `site.ts`（由脚本生成的站点配置）
-│   └── styles/        # 全局样式与 Tailwind 初始化
-├── content/           # 本地 MDX 内容（项目）
-├── scripts/           # `config.mjs`、`sync-projects.mjs` 等脚本
-├── tests/             # Vitest + Playwright 测试
-├── Makefile           # 日常任务入口
-├── config.yaml        # 站点与运行时集中配置（勿提交真实密钥）
-└── config.example.yaml# 配置模板（安全占位符）
+│   ├── components/              # UI/站点组件、MDX 适配器、命令面板等
+│   │   ├── ui/                  # shadcn/ui 封装（Button/Badge/Dialog...）
+│   │   ├── site/                # Header/Footer/主题/搜索/阅读进度/TOC 等
+│   │   └── mdx/                 # MDX 专用组件（Callout/Figure/LinkCard...）
+│   ├── config/                  # `site.ts`（由 config 脚本生成）
+│   ├── lib/                     # 数据层封装
+│   │   ├── content.ts           # MDX 内容解析、frontmatter Zod 校验
+│   │   ├── yuque.ts             # 语雀 API 客户端与缓存策略
+│   │   ├── search.ts            # MiniSearch 工具 & 高亮片段
+│   │   ├── resend.ts            # Resend Audience/邮件辅助函数
+│   │   └── server/              # 仅服务端工具（限流、请求解析等）
+│   ├── i18n/                    # next-intl 配置与多语言文案
+│   ├── styles/                  # Tailwind 全局样式
+│   ├── test-helpers/            # Vitest/Playwright 共用辅助
+│   └── types/                   # 若需扩展可放置全局类型声明
+│
+├── content/
+│   └── projects/                # 本地 MDX 项目（frontmatter 元数据）
+│
+├── scripts/
+│   ├── config.mjs               # 解析 config.yaml → site.ts & .env.local
+│   └── sync-projects.mjs        # 调 GitHub API 生成项目 MDX（可选）
+│
+├── tests/
+│   ├── *.test.ts                # Vitest 单测（站点地图、RSS、API、表单...）
+│   └── e2e/*.spec.ts            # Playwright 场景测试（命令面板、订阅、搜索等）
+│
+├── public/                      # 静态资源（icon.svg、图片、PWA 产物缓存）
+├── middleware.ts                # 全局中间件：CSP、安全头、Locale 协商
+├── Makefile                     # 本地任务编排（中文注释分组）
+├── Dockerfile                   # 多阶段构建（Node 20 Alpine）
+├── docker-compose.yml           # 单服务 Compose，注入必要 env
+├── config.example.yaml          # 配置模板（请复制为 config.yaml 后修改）
+├── config.yaml                  # 本地真实配置（勿提交敏感信息）
+├── vitest.config.ts             # Vitest 配置（alias/happy-dom）
+├── playwright.config.ts         # Playwright 配置（本地 dev / CI build+start）
+├── tailwind.config.ts           # Tailwind 主题/插件/扫描范围
+├── tsconfig.json                # TypeScript 严格配置与路径别名
+└── package.json                 # npm 脚本、依赖、engines
 ```
 
 ---
 
-## 快速上手
+## 环境准备与体检
+- **运行时依赖**：
+  - Node.js ≥ 18.17.0（推荐与 CI 一致的 LTS 版本）
+  - npm 10.x（或同等 npm-compatible 工具，如 pnpm/yarn，不过 Makefile 默认使用 npm）
+  - 可选：Docker/Docker Compose 用于容器化部署
+- **系统工具**：`git`, `curl`, `make`, `lsof`（Makefile 某些目标会调用）
+- **外部凭据**（按需配置）：
+  - Yuque：`YUQUE_TOKEN`, `YUQUE_LOGIN`
+  - Resend：`RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `RESEND_NEWSLETTER_AUDIENCE_ID`, `NEWSLETTER_FROM`
+  - Upstash Redis：`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+  - GitHub：`GITHUB_TOKEN`（同步项目脚本可选）
+- **首次体检**：
+  ```bash
+  make doctor            # 检查 Node/npm/Playwright 安装，以及 yaml 模块可用性
+  make install           # 安装依赖（doctor 若提示缺模块请先执行）
+  ```
+- **Playwright 浏览器**：
+  ```bash
+  make pw-install        # 首次使用 E2E 测试前安装浏览器二进制
+  ```
+- **Node 版本锁定建议**：使用 `fnm`, `nvm` 或 `.tool-versions` 对齐团队版本，避免构建差异。
 
-### 0. 环境要求
+---
 
-- Node.js **≥ 18.17.0**（建议与 `.nvmrc` 或 CI 环境保持一致）
-- npm 10.x 或兼容的包管理器（Makefile 默认调用 `npm`）
-- 语雀开放 API、Resend、Upstash 等凭据（如需相关功能）
+## 配置与生成（config.yaml → site.ts/.env.local）
+1. **复制模板并填写**：
+   ```bash
+   cp config.example.yaml config.yaml
+   ```
+   - `site.*`：站点名称、描述、作者信息、社交链接、备案等。
+   - `site.quickLinks`：首页常用入口列表。
+   - `runtime.host/port`：本地开发/工具命令默认 HOST/PORT。
+   - `runtime.revalidateSecret`：ISR 再验证密钥（生产请务必使用强随机值）。
+   - `runtime.env.*`：外部服务密钥（Resend / Upstash / Yuque / GitHub）。
+   - `github.*`：`sync-projects` 脚本的筛选条件（include/exclude/topic）。
+2. **生成配置与环境变量**：
+   ```bash
+   make config
+   ```
+   - 输出 `src/config/site.ts`（默认导出 `siteConfig` + 兼容命名导出 `site`）。
+   - 合并更新 `.env.local`：脚本会读取现有文件并以 `config.yaml` 覆盖同名键。
+   - 强制同步的键：
+     - `NEXT_PUBLIC_SITE_URL ← site.url`
+     - `NEXT_PUBLIC_PLAUSIBLE_DOMAIN ← runtime.plausibleDomain`
+     - `REVALIDATE_SECRET ← runtime.revalidateSecret`
+   - 配置检查：脚本会针对未配置的 Resend/Upstash 等关键项给出警告但不中断。
+3. **查看解析结果**：
+   ```bash
+   make env
+   ```
+   输出解析后的 HOST/PORT/SECRET，并提示 `.env.local` 是否存在。
+4. **安全注意**：
+   - `config.yaml` 不应提交至仓库，真实密钥在部署环境配置。
+   - `.env.local` 默认也加入 `.gitignore`，仅本地生效。
 
-### 1. 配置站点信息
+---
 
-1. 复制模板：`cp config.example.yaml config.yaml`
-2. 按需填写：
-   - `site`：站点名称、作者信息、社交账号、备案信息等
-   - `runtime.host` / `runtime.port`：`make dev` 使用的 HOST/PORT
-   - `runtime.env`：邮件、Redis、语雀等密钥（**切勿提交真实值**）。建议只在本地的 `config.yaml` 中维护，或直接写入 `.env.local`。
-   - 语雀集成必须提供 `YUQUE_TOKEN`（只读）与 `YUQUE_LOGIN`。
+## 开发与调试（常用工作流）
+- **启动开发模式**：
+  ```bash
+  make dev                # 读取 config.yaml 的 HOST/PORT，可通过 HOST/PORT 覆盖
+  make dev HOST=0.0.0.0 PORT=4000
+  ```
+  - App Router + 热更新；语雀内容实时拉取；命令面板/搜索全功能。
+- **预览生产构建**：
+  ```bash
+  make preview            # 等价于 make build && make start（读取 HOST/PORT）
+  ```
+- **静态产物调试**：
+  ```bash
+  make sitemap            # 查看 sitemap.xml
+  make rss                # 查看 rss.xml
+  make search-index       # 下载搜索索引 JSON
+  ```
+- **Yuque 诊断工具**：
+  ```bash
+  make yuque-health       # 健康诊断，可加 QUERY="?deep=1&drafts=1"
+  make yuque-search Q=AI  # 搜索语雀文档
+  make yuque-toc NS=login/repo
+  make yuque-toc-raw NS=login/repo
+  ```
+- **ISR 刷新**：
+  ```bash
+  make revalidate REVALIDATE_PATH=/blog
+  ```
+- **内容同步**（可选 GitHub 项目 → MDX）：
+  ```bash
+  make sync-projects      # 使用 config.yaml 的 github.* 配置筛选并生成 MDX
+  ```
+- **端口清理**：
+  ```bash
+  make stop PORT=3000     # 杀掉指定端口的进程
+  make stop-ports         # 清理常用开发端口 3000-3003
+  ```
 
-> 生产部署时，请在 CI/平台环境变量中注入相同的键，避免把真实 Token 直接写入仓库。
+---
 
-### 2. 安装依赖并生成配置
+## Makefile 目标详解
+- **总览**：`make help` 按分类输出所有目标。
+- **基础与配置（general/setup）**：
+  - `make setup`：安装依赖 + 生成配置（install + config）。
+  - `make install` / `make config` / `make env`
+  - `make doctor`：检测 Node/npm/yaml/Playwright。
+- **开发流程（dev）**：
+  - `make dev` / `make build` / `make start` / `make preview`
+  - `make analyze`：`ANALYZE=true` 启用包分析。
+- **质量保障（quality）**：
+  - `make typecheck`、`make lint`、`make lint-fix`
+  - `make format`、`make format-check`
+  - `make check`：类型 + Lint + 单测组合。
+  - `make ci`：类型 + Lint + 单测 + 构建（CI 标准流程）。
+  - `make lhci`：运行 Lighthouse CI（一次采集）。
+- **测试（test）**：
+  - `make test`、`make test-watch`
+  - `make e2e`、`make e2e-ui`
+  - `make pw-install`
+- **内容与集成（content/util）**：
+  - `make sync-projects`
+  - `make yuque-health/search/toc/toc-raw`
+  - `make revalidate`、`make sitemap`、`make rss`、`make search-index`
+- **维护工具（maintenance）**：
+  - `make clean` / `make clean-all`
+  - `make stop` / `make stop-ports`
+- **容器（docker）**：
+  - `make docker-build` / `make docker-run` / `make docker-stop`
+  - `make compose-up` / `make compose-down` / `make compose-restart`
 
+提示：Makefile 中大量命令依赖 `config.yaml` 自动读取 HOST/PORT/SECRET，确保先执行 `make config`。
+
+---
+
+## 内容来源（语雀 + 本地 MDX）
+- **语雀内容流**：
+  - `src/lib/yuque.ts` 封装鉴权、分页、TOC 构建、搜索代理，默认 10 分钟再验证。
+  - `/blog` 页面按 namespace（知识库）分组，可通过 `BLOG_DEFAULT_OPEN_WHITELIST` 调整默认展开。
+  - API：`/api/yuque/health`（体检）、`/api/yuque-search`、`/api/yuque/toc`、`/api/yuque/toc-raw`。
+  - 搜索：客户端优先使用语雀实时搜索，失败时回退本地 MiniSearch 索引。
+- **本地 MDX 项目**：
+  - 目录：`content/projects/*.mdx`
+  - frontmatter 由 Zod 校验（标题、描述、日期、tech/tags、links）
+  - 构建期缓存：`getAllProjects()` 使用 memo，降低文件 I/O。
+  - 项目详情页在 RSC 中渲染 MDX，代码高亮由客户端组件 `SyntaxHighlighter` 处理。
+- **GitHub README 同步（可选）**：
+  - `scripts/sync-projects.mjs` 调用 GitHub API，根据 `config.yaml` 的 include/exclude/topicFilter` 筛选。
+  - 自动清理无用 Markdown、转义 HTML 注释、补充 `mailto:` 链接，生成新的 MDX 文件。
+- **搜索索引**：
+  - `/api/search-index` 聚合语雀文档 + 本地项目，输出 MiniSearch 兼容 JSON。
+  - 使用 `ETag` 和 `Cache-Control` 减少重复拉取，`make search-index` 可快速检查。
+
+---
+
+## 测试与质量（Vitest/Playwright/LHCI）
+- **Vitest 单测** (`tests/*.test.ts`)：
+  - 环境：happy-dom，自动引入 `@testing-library/jest-dom`。
+  - 范围：RSS/Sitemap/Robots、Newsletter/Contact API、内容解析、HTML sanitize、middleware 逻辑等。
+  - 命令：
+    ```bash
+    make test              # 一次性运行
+    make test-watch        # watch 模式
+    ```
+- **Playwright E2E** (`tests/e2e/*.spec.ts`)：
+  - 场景：命令面板、移动端菜单、搜索联动、订阅确认、项目/简历页面、表单链路等。
+  - 配置：本地默认拉起 `npm run dev -p 3001`，CI 走 `npm run build && npm run start -p 3000`。
+  - 命令：
+    ```bash
+    make e2e               # CLI 模式
+    make e2e-ui            # 可视化调试
+    ```
+- **组合检查**：
+  ```bash
+  make check              # typecheck + lint + test
+  make ci                 # + build，CI 使用
+  ```
+- **性能与可访问性**：
+  - `make lhci` 调用 Lighthouse CI（单次采集，可在生产域名运行），建议在 CI/发布前执行。
+- **测试准入**：新增或修改路由/逻辑时至少补充对应 Vitest/Playwright 覆盖。
+
+---
+
+## API 路由与页面一览
+
+### 页面（节选）
+| 路径 | 描述 | 关键点 |
+| --- | --- | --- |
+| `/` | 首页 | 语雀文章摘要 + 精选项目 + Quick Links；revalidate 10 分钟 |
+| `/blog` | 语雀文章索引 | namespace 分组、TOC 缓存、默认展开控制 |
+| `/blog/[login]/[repo]/[slug]` | 文章详情 | SSR 渲染 Markdown → HTML，结构化数据 |
+| `/projects` | 项目列表 | 标签筛选、精选过滤、结构化数据 ItemList |
+| `/projects/[slug]` | 项目详情 | MDX 渲染、GitHub/Demo 按钮、OpenGraph 图 |
+| `/tags` / `/tags/[tag]` | 标签索引 | 来自项目 frontmatter，SEO 友好 |
+| `/search` | 全站搜索 | 静态索引 + 语雀搜索、键盘导航、高亮 |
+| `/contact` | 联系表单 | 蜜罐、Upstash 限流、Resend 邮件通知 |
+| `/subscribe` / `/subscribe/confirm` | Newsletter | 双重确认逻辑、Toast 反馈 |
+| `/resume` | 简历 | 打印友好、结构化数据 |
+| `/policies` | 协议/隐私占位页 | 可按需扩写 |
+| `/_offline` | PWA 离线页 | Edge Runtime 纯静态 |
+
+### API Routes
+| 路径 | 方法 | 说明 |
+| --- | --- | --- |
+| `/api/contact` | POST | 表单校验 + Upstash 限流 + Resend 邮件；缺密钥时降级成功 |
+| `/api/newsletter` | POST | 订阅入口：滑动窗口限流、双重确认（Redis token）|
+| `/api/newsletter/confirm` | GET | Token 换邮箱 → Resend Audience，成功后删除 Redis 记录 |
+| `/api/revalidate` | GET | 触发再验证，需要 `REVALIDATE_SECRET`（生产）|
+| `/api/search-index` | GET | MiniSearch 索引 JSON，支持 ETag/304 |
+| `/api/yuque-search` | GET | 语雀搜索代理，limit 默认 20 |
+| `/api/yuque/health` | GET | 健康探针：环境、namespace 样本、深度统计 |
+| `/api/yuque/toc` | GET | TOC 汇总，失败回退解析 toc_yml |
+| `/api/yuque/toc-raw` | GET | TOC 原始调试，支持 namespace 或 repoId |
+
+---
+
+## 部署与运维（Docker/Compose）
+- **环境变量管理**：
+  - 本地使用 `.env.local`；生产环境通过部署平台（Vercel/Render/自建服务器）注入。
+  - 需同步的关键变量：Yuque / Resend / Upstash / Plausible / NEXT_PUBLIC_*。
+- **构建流程**：
+  - 在 CI 或镜像构建阶段必须执行 `npm run config`（或 `make config`）保证 `site.ts` 最新。
+  - Dockerfile 使用多阶段：builder 安装依赖 + build，runner 仅保留 `.next`、`public`、`node_modules`。
+  - 默认 `CMD npm run start`，暴露 `PORT=3000`。
+- **Docker Compose**：
+  - `docker-compose.yml` 示例已列出所需环境变量，可根据部署环境改为 secret/配置中心。
+  - 命令：
+    ```bash
+    make docker-build            # 构建镜像 index-home:latest
+    make docker-run              # 后台运行，映射 3000
+    make compose-up              # 使用 docker compose up -d
+    ```
+- **Vercel 部署**：
+  - 默认兼容；需要在 Settings → Environment Variables 配置 `REVALIDATE_SECRET` 等密钥。
+  - 可选开启 `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` 以启用分析脚本。
+- **自托管**：
+  - 推荐：`npm run build && npm run start -- -H 0.0.0.0 -p 3000`，前置 Nginx/Traefik 做 HTTPS。
+  - 健康检查：`/api/yuque/health`, `/sitemap.xml`, `/rss.xml`, `/api/search-index`。
+- **日志与监控**：
+  - 留意 API 响应头含 `Retry-After`、`X-RateLimit-*` 的限流信息。
+  - 使用外部监控（如 UptimeRobot）定期访问 `/api/yuque/health`。
+
+---
+
+## 故障排查 FAQ（含命令示例）
+- **博客页为空或 404**：
+  - 原因：未配置 `YUQUE_TOKEN` 或语雀知识库非公开。
+  - 排查：`make yuque-health` 查看 `env.YUQUE_LOGIN`、`probe.ok`、`sampleNamespaces`。
+- **语雀文章缺失/目录不正确**：
+  - `make yuque-toc NS=login/repo` 查看 TOC 数量；如 0，再运行 `make yuque-toc NS=... QUERY="?repo=...&by=id"`。
+  - 使用 `make yuque-toc-raw` 获取原始 toc_yml，确认语雀端配置。
+- **`make config` 未生成 `.env.local`**：
+  - 确认 `config.yaml` 是否存在、YAML 缩进是否正确。
+  - 脚本输出若警告 `REVALIDATE_SECRET 未设置为生产安全值`，请更新配置后重新执行。
+- **联系表单返回 429**：
+  - Upstash 限流命中。同一 IP 5 分钟内最多 3 次，响应头含 `Retry-After`。
+  - 可在 `config.yaml` 中补齐 Upstash token 或调高阈值（修改代码）。
+- **Newsletter 未收到确认邮件**：
+  - 检查 `RESEND_API_KEY`、`RESEND_NEWSLETTER_AUDIENCE_ID`、`NEWSLETTER_FROM`。
+  - 若未配置 Redis 或 `NEXT_PUBLIC_SITE_URL`，脚本会降级为直接写入（不会发送确认邮件）。
+  - 查看 `make yuque-health` 无关，可直接 `curl` 确认 `/api/newsletter` 返回 `ok: true`。
+- **Playwright 启动慢或失败**：
+  - 首次运行需 `make pw-install`。
+  - 若端口被占用，执行 `make stop-ports`。
+  - 本地 E2E 默认拉起 dev server（3001），确保无冲突。
+- **Docker 构建失败（缺少 config.yaml）**：
+  - 构建阶段会执行 `npm run config`，需在镜像构建前将 `config.yaml`（或其安全版本）打包或通过构建时 Secret 提供。
+- **PWA 离线页无效**：
+  - 开发模式默认禁用 PWA；需 `NODE_ENV=production` 才启用 Service Worker。
+  - 检查构建后 `public/sw.js` 是否存在，或运行 `make preview` 并在 Application → Service Workers 查看。
+
+---
+
+## 安全与最佳实践
+- **配置管理**：
+  - 不要提交真实密钥；`config.yaml` 仅供本地，生产改为环境变量。
+  - `REVALIDATE_SECRET` 必须在生产设置为高熵随机字符串。
+- **表单安全**：
+  - 联系与订阅接口均启用限流、蜜罐与服务端 Zod 校验。
+  - 建议在部署平台再配合 WAF/IP Allowlist（如 Cloudflare Rules）。
+- **内容安全策略（CSP）**：
+  - `middleware.ts` 统一注入 CSP 和安全头，若新增外部脚本需同步更新白名单。
+  - Plausible 分析通过 `nonce` 防止内联脚本被阻断。
+- **依赖升级**：
+  - 使用 `npm outdated` 查看，升级前运行 `make check` + `make e2e`。
+  - 关键依赖（Next.js, TypeScript, Playwright）升级需关注 release note。
+- **代码风格**：
+  - 新增组件遵循 `src/components` 目录结构（UI/站点/MDX 分层）。
+  - 文章/项目相关组件可复用 MDX 组件映射，统一外链/图片策略。
+- **监控与告警**：
+  - 推荐：Plausible、Sentry（可自行集成）、Upstash 监控限流命中情况。
+  - 定期检查 `/api/yuque/health?deep=1` 输出中文档数量是否符合预期。
+
+---
+
+## 常用命令速查表（Cheat-Sheet）
 ```bash
-make setup        # 安装依赖并生成配置（等价于 install + config）
-# 或按需分步执行：make install / make config
+make setup                       # 安装依赖 + 生成配置
+make dev                         # 启动开发服务器
+make preview                     # 构建并以生产模式启动
+make analyze                     # 打包分析
+make check                       # 类型 + Lint + 单测
+make e2e / make e2e-ui           # Playwright 端到端测试
+make lhci                        # Lighthouse CI
+make yuque-health                # 语雀健康探针
+make yuque-search Q=XXX          # 语雀搜索
+make sync-projects               # 同步 GitHub 仓库 README → MDX
+make revalidate REVALIDATE_PATH=/blog
+make sitemap / make rss / make search-index
+make docker-build && make docker-run
+make compose-up / make compose-down
+make clean / make clean-all      # 清理缓存与 node_modules
 ```
 
-### 3. 启动开发服务器
-
-```bash
-make dev          # 等价于 npm run dev -- -H <host> -p <port>
-```
-
-首轮启动会自动执行 `make config`，确保 TypeScript 与运行时的配置同步。需要查看运行参数时，可随时执行 `make env`。
-
 ---
 
-## 配置系统
-
-- **单一来源**：`config.yaml` → `scripts/config.mjs` 输出 `src/config/site.ts`（供应用导入）与 `.env.local`（供 Next 环境变量使用）。
-- **优先级**：执行 `make config` 时，`config.yaml` 中的键会覆盖 `.env.local` 的同名键；手动调整 `.env.local` 后需要再次执行 `make config` 以保持一致。
-- **敏感信息**：
-  - 建议把 `config.yaml` 视为本地文件，不提交真实密钥。
-  - 仓库中附带 `config.example.yaml`，在 README 中统一说明需要替换的字段。
-- **语雀调试选项**：`runtime.YUQUE_INCLUDE_DRAFTS=true` 可在本地看到草稿文档，上线前务必关闭。
-
----
-
-## 内容来源与数据流
-
-### 语雀（Yuque）
-
-- 通过 `src/lib/yuque.ts` 封装语雀 REST API：
-  - `listAllPublicDocs(login)`：拉取用户/团队所有公开知识库的文档。
-  - `listRepoToc(namespace)` + `buildTocTree()`：转换 TOC 为树形结构，支撑知识库索引页与左侧目录树。
-  - `getDocDetail(namespace, slug)`：多次回退（namespace → repoId → 列表映射）以提升命中率。
-  - `searchYuqueAll(login, q)`：语雀站内搜索，集成到命令面板与 `/api/yuque-search`。
-- ISR 默认 10 分钟，可根据需求调整 `export const revalidate`。
-- `make yuque-health QUERY='?deep=1&drafts=1'`：调用 `/api/yuque/health` 诊断接口，帮助验证 token、知识库、草稿可见性等。
-
-### 本地 MDX
-
-- `content/projects`：使用 Zod schema 强校验 frontmatter，集中存放项目介绍。
-- `src/lib/content.ts`：提供 `getAllProjects` / `getAllTags` 等 API，构建期缓存减少 I/O。
-
-### 搜索索引
-
-- `/api/search-index`：基于语雀文档与本地项目生成静态索引（需要配置 `YUQUE_LOGIN` 才会包含文章）。
-- 构建后通过 MiniSearch 在浏览器内实现全文搜索，高亮片段由 `src/lib/search.ts` 提供。
-
----
-
-## 常用脚本（Makefile）
-
-| 命令                                                                  | 作用                                        |
-| --------------------------------------------------------------------- | ------------------------------------------- |
-| `make help`                                                           | 按分类列出所有目标                          |
-| `make setup` / `make config` / `make env`                             | 安装依赖、生成配置、查看 HOST/PORT/SECRET   |
-| `make dev` / `make build` / `make start` / `make preview`             | 开发 / 构建 / 生产启动 / 先构建再启动       |
-| `make typecheck` / `make lint` / `make lint-fix` / `make format`      | 质量检查与格式化                            |
-| `make check` / `make ci`                                              | 本地质量组合（check）与 CI 流程（额外构建） |
-| `make test` / `make test-watch` / `make e2e` / `make e2e-ui`          | Vitest 单测 + Playwright E2E                |
-| `make sync-projects`                                                  | 从 GitHub 拉取项目 README 生成 MDX          |
-| `make yuque-health` / `make yuque-search Q=关键字`                    | 排查语雀配置、快速搜索公开文档              |
-| `make revalidate` / `make sitemap` / `make rss` / `make search-index` | 常用 API/静态产物调试                       |
-| `make clean` / `make clean-all` / `make stop` / `make stop-ports`     | 清理构建产物与端口管理                      |
-| `make docker-build` / `make docker-run` / `make docker-stop`          | Docker 构建 / 运行 / 清理                   |
-
-> 默认端口、主机、Revalidate Secret 取自 `config.yaml`；可通过环境变量覆盖：`make dev HOST=0.0.0.0 PORT=4000`。
-
----
-
-## 测试与质量保障
-
-- **Vitest** (`tests/*.test.ts`)：覆盖内容解析、搜索索引、API 等关键逻辑。自定义 `tests/mocks/*` 用于 Resend、`server-only` 等模块替身。
-- **Playwright** (`tests/e2e/*.spec.ts`)：覆盖订阅、联系表单、命令面板、移动菜单等核心路径。
-- **建议流程**：
-  1. 本地迭代：`make dev`
-  2. 变更后：`make check`
-  3. 覆盖到页面/交互：`make e2e`
-  4. 合并或发布前：`npm run lhci`（可在 CI 中运行）
-- **CI**：`ci.yml`（如已配置）典型顺序为 `npm ci → make check → npm run build → make e2e → npm run lhci`。
-
----
-
-## 关键页面路由
-
-| 路径                             | 类型 | 说明                                                                       |
-| -------------------------------- | ---- | -------------------------------------------------------------------------- |
-| `/`                              | 页面 | 首页：语雀最新文章、精选项目、主行动按钮                                   |
-| `/blog`                          | 页面 | 语雀知识库汇总视图（按 namespace 分组，支持展开记忆）                      |
-| `/blog/[login]/[repo]`           | 页面 | 单个知识库索引，展示 TOC + 语雀元信息                                      |
-| `/blog/[login]/[repo]/[slug]`    | 页面 | 知识库文章详情，支持 HTML / Markdown 渲染、右侧目录                        |
-| `/projects` / `/projects/[slug]` | 页面 | 本地 MDX 项目列表与详情                                                    |
-| `/subscribe` / `/contact`        | 页面 | 表单 + Resend 邮件 + Upstash 限流                                          |
-| `/api/*`                         | 接口 | `newsletter`、`contact`、`search-index`、`yuque-search`、`yuque/health` 等 |
-
-> 语雀集成开启后，旧的 `/blog/[slug]` 路由已移除；`/blog/page/[page]` 会自动重定向到 `/blog`。
-
----
-
-## 部署与运维
-
-1. **准备环境变量**：确保部署平台注入与 `.env.local` 相同的键值（Resend、Upstash、Yuque、`NEXT_PUBLIC_SITE_URL` 等）。
-2. **构建脚本**：在 CI 中加入 `npm run config`，保证最新的 `site.ts` 与 `.env` 合成。
-3. **平台建议**：
-   - **Vercel**：默认即可运行（Edge + Node Route Handler 混用）。语雀/Resend/Upstash Token 放在项目环境变量里。
-   - **自托管**：使用 `make preview` 或 `npm run build && npm run start`；推荐配合 PM2/Supervisor、反向代理、HTTPS。
-4. **健康检查**：
-   - `/api/yuque/health`：确认语雀凭证、知识库、文档数量是否异常。
-   - `/sitemap.xml` / `/rss.xml` / `/api/search-index`：观察是否生成语雀内容。
-   - 表单接口在部署后调试一次，确认邮件送达与限流生效。
-5. **缓存策略**：默认 ISR 10 分钟，若需要实时更新，可在语雀同步后执行 `make revalidate REVALIDATE_PATH=/blog`。
-
----
-
-## 常见问题
-
-| 问题                         | 排查路径                                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `/blog` 空白或 404           | 检查是否填入 `YUQUE_TOKEN` 与 `YUQUE_LOGIN`；执行 `make yuque-health` 观察返回值                              |
-| 语雀文章缺少 HTML / 样式混乱 | 语雀会返回 Markdown 时自动回退到 MDX 渲染；如需保留语雀特有样式，可扩展 `sanitizeHtml` 或在文章内使用内联样式 |
-| Tags 页面无文章              | 当启用语雀后，旧的 Markdown 博客标签会被忽略；目前仅统计本地项目标签，属预期行为                              |
-| `make config` 提示变量缺失   | `.env.local` 未生成或 `config.yaml` 未填写所需字段；可先创建 `.env.local` 再运行                              |
-| 表单接口 429                 | Upstash Ratelimit 命中；依据响应头 `Retry-After` 做用户提示                                                   |
-
----
-
-## 后续计划建议
-
-- 语雀文档打标签 → `/tags` 支持以知识库 / 标签聚合语雀内容。
-- 将 Docker 镜像拆分为多阶段构建（builder + runtime），缩小体积。
-- 引入内容变更监控（如 GitHub Action 定时触发 `make revalidate`）。
-- 持续补充 Playwright 场景（语雀知识库导航、移动端布局、搜索命中等）。
-
----
-
-祝你用 Index-home 构建出长期可维护的内容站点，如需扩展欢迎在文档或脚本中保持同样的“配置集中 + 自动验证”理念。
+> 如需扩展脚本或工作流，欢迎在 Makefile、`scripts/`、`src/lib/` 中新增模块，保持单一职责并补充测试/文档。遇到问题或优化想法，先运行相关诊断命令并记录输出，可大幅降低排查成本。

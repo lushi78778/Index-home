@@ -1,10 +1,10 @@
-### OS
+### 操作系统
 .DS_Store
 
-### Dependencies
+### 依赖目录
 node_modules/
 
-### Logs
+### 日志文件
 logs
 *.log
 npm-debug.log*
@@ -12,14 +12,14 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-### Env files (secrets managed outside VCS)
+### 环境变量文件（密钥不纳入版本控制）
 .env
 .env.*
 !.env.example
 .env.local
 .env.*.local
 
-### Next.js / Build outputs
+### Next.js / 构建产物
 .next/
 .next/cache/
 /.next/types
@@ -31,29 +31,29 @@ dist/
 ### TypeScript
 *.tsbuildinfo
 
-### Test artifacts
+### 测试产物
 coverage/
 playwright-report/
 test-results/
 .playwright/
 
-### PWA generated assets
+### PWA 生成的静态文件
 public/sw.js
 public/workbox-*.js
 public/fallback-*.js
 
-### Generated config (single source is config.yaml)
+### 生成的配置文件（单一来源为 config.yaml）
 src/config/site.ts
 
-### Editor / IDE
+### 编辑器 / IDE
 .vscode/
 .idea/
 
-### System files
+### 系统文件
 Thumbs.db
 desktop.ini
 
-### Tool caches
+### 工具缓存
 .npm
 .eslintcache
 .stylelintcache
@@ -70,7 +70,7 @@ desktop.ini
 !.yarn/sdks
 !.yarn/versions
 
-### Project-specific
-# 配置模板保留，真实配置忽略
+### 项目特定
+# 保留配置模板，忽略真实配置
 config.yaml
 !config.example.yaml

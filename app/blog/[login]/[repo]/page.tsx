@@ -1,10 +1,9 @@
-import {
-  listRepoToc,
-  listUserPublicRepos,
-  buildTocTree,
-  listRepoDocsRaw,
-  ensureViews,
-} from '@/lib/yuque'
+/**
+ * 语雀知识库首页（/blog/[login]/[repo]）
+ * - 获取知识库的目录树与文档元信息，按分组折叠展示最近更新文档
+ * - 支持通过环境变量配置最大递归深度，兼容思维导图与文档类型
+ */
+import { listRepoToc, listUserPublicRepos, buildTocTree, listRepoDocsRaw } from '@/lib/yuque'
 import Link from 'next/link'
 import { formatDateTime } from '@/lib/datetime'
 
@@ -36,8 +35,6 @@ export default async function RepoIndexPage({
       word_count?: number
       updated_at?: string
       created_at?: string
-      read_count?: number
-      hits?: number
       likes_count?: number
       comments_count?: number
       type?: string
@@ -52,8 +49,6 @@ export default async function RepoIndexPage({
           word_count: d.word_count,
           updated_at: d.updated_at,
           created_at: d.created_at,
-          read_count: d.read_count,
-          hits: d.hits,
           likes_count: d.likes_count,
           comments_count: d.comments_count,
           type: d.type,
@@ -71,36 +66,13 @@ export default async function RepoIndexPage({
   const getSlug = (n: TocNode) =>
     n.slug || (n.url ? n.url.split('/').filter(Boolean).slice(-1)[0] : '')
 
-  // 预取：为即将渲染的文档补齐 read_count（与详情一致）
-  const collectSlugs = (
-    arr: TocNode[] | undefined,
-    depth = 1,
-    out: Set<string> = new Set(),
-  ): Set<string> => {
-    for (const n of arr || []) {
-      if (isDocLike(n)) {
-        const s = getSlug(n)
-        if (s) out.add(s)
-      }
-      if (depth < MAX_DEPTH && n.children && n.children.length) {
-        collectSlugs(n.children, depth + 1, out)
-      }
-    }
-    return out
-  }
-  const slugs = Array.from(collectSlugs(tree))
-  const viewHints = Object.fromEntries(
-    slugs.map((s) => [s, { read_count: docsMeta[s]?.read_count, hits: docsMeta[s]?.hits }]),
-  )
-  const viewsMap = await ensureViews(namespace, slugs, viewHints)
+  // 已移除浏览量预取逻辑
 
   // 单行文档行
   const DocRow = ({ node }: { node: TocNode }) => {
     const slug = getSlug(node)
     if (!slug) return null
     const meta = docsMeta[slug] || {}
-    const views =
-      typeof meta.read_count === 'number' ? meta.read_count : viewsMap[slug] ?? meta.hits
     return (
       <div className="rounded border px-3 py-2 flex items-center justify-between hover:bg-accent/30 transition-colors">
         <Link
@@ -110,25 +82,12 @@ export default async function RepoIndexPage({
         >
           {node.title || slug}
         </Link>
-        {(meta.created_at ||
-          meta.updated_at ||
-          typeof meta.word_count === 'number' ||
-          typeof views === 'number' ||
-          typeof meta.likes_count === 'number' ||
-          typeof meta.comments_count === 'number' ||
-          meta.type === 'Mind') && (
+        {(meta.created_at || typeof meta.word_count === 'number' || meta.type === 'Mind') && (
           <div className="shrink-0 text-xs text-muted-foreground flex flex-wrap gap-2 justify-end">
             {meta.created_at && <span>发布 {formatDateTime(meta.created_at)}</span>}
-            {meta.updated_at && meta.updated_at !== meta.created_at && (
-              <span className="text-muted-foreground/70">
-                更新 {formatDateTime(meta.updated_at)}
-              </span>
-            )}
             {typeof meta.word_count === 'number' && <span>{meta.word_count} 字</span>}
-            {typeof views === 'number' && <span>{views} 次浏览</span>}
             {meta.type === 'Mind' && <span>思维导图</span>}
-            {typeof meta.likes_count === 'number' && <span>{meta.likes_count} 喜欢</span>}
-            {typeof meta.comments_count === 'number' && <span>{meta.comments_count} 评论</span>}
+            {/* 喜欢/评论已在非正文区域移除展示 */}
           </div>
         )}
       </div>

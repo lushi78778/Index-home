@@ -1,22 +1,12 @@
+/**
+ * 语雀 TOC 原始调试接口（GET /api/yuque/toc-raw?repo=ns[&by=id]）
+ * - 直接透传语雀的 TOC 原始响应文本，便于排查解析问题
+ * - 支持通过 namespace 或 repoId（需先查询映射）两种方式获取
+ */
 import { NextResponse } from 'next/server'
-import { listUserPublicRepos } from '@/lib/yuque'
-
-const BASE = process.env.YUQUE_BASE || 'https://www.yuque.com/api/v2'
-const TOKEN = process.env.YUQUE_TOKEN || ''
+import { fetchYuqueRawResponse, listUserPublicRepos } from '@/lib/yuque'
 
 export const revalidate = 0
-
-async function rawFetch(path: string) {
-  const url = `${BASE}${path}`
-  const headers: Record<string, string> = {
-    'User-Agent': 'index-home-yuque-debug',
-    Accept: 'application/json',
-  }
-  if (TOKEN) headers['X-Auth-Token'] = TOKEN
-  const res = await fetch(url, { headers, cache: 'no-store' })
-  const text = await res.text()
-  return { status: res.status, statusText: res.statusText, text }
-}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -29,10 +19,10 @@ export async function GET(req: Request) {
       const repos = await listUserPublicRepos(login)
       const id = (Array.isArray(repos) ? repos : []).find((r) => r.namespace === ns)?.id
       if (!id) return NextResponse.json({ error: 'no id for ns' }, { status: 404 })
-      const raw = await rawFetch(`/repos/${id}/toc`)
+      const raw = await fetchYuqueRawResponse(`/repos/${id}/toc`)
       return NextResponse.json({ by: 'id', id, raw })
     }
-    const raw = await rawFetch(`/repos/${encodeURIComponent(ns)}/toc`)
+    const raw = await fetchYuqueRawResponse(`/repos/${encodeURIComponent(ns)}/toc`)
     return NextResponse.json({ by: 'namespace', raw })
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || String(err) }, { status: 500 })

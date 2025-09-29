@@ -1,19 +1,10 @@
+/**
+ * 语雀 TOC 汇总接口（GET /api/yuque/toc?repo=ns）
+ * - 优先通过 namespace 获取 toc；若失败，尝试通过 repoId 再次获取
+ * - 当 toc 为空时，回退解析 toc_yml，输出样本与分组统计辅助定位
+ */
 import { NextResponse } from 'next/server'
-import { listRepoToc, listUserPublicRepos } from '@/lib/yuque'
-
-const BASE = process.env.YUQUE_BASE || 'https://www.yuque.com/api/v2'
-const TOKEN = process.env.YUQUE_TOKEN || ''
-async function rawFetch(path: string) {
-  const url = `${BASE}${path}`
-  const headers: Record<string, string> = {
-    'User-Agent': 'index-home-yuque-debug',
-    Accept: 'application/json',
-  }
-  if (TOKEN) headers['X-Auth-Token'] = TOKEN
-  const res = await fetch(url, { headers, cache: 'no-store' })
-  const text = await res.text()
-  return { status: res.status, statusText: res.statusText, text }
-}
+import { fetchYuqueRawResponse, listRepoToc, listUserPublicRepos } from '@/lib/yuque'
 
 export const revalidate = 0
 
@@ -50,7 +41,7 @@ export async function GET(req: Request) {
     // 如果为空，尝试直接解析原始 toc_yml 以辅助定位
     if (!arr.length) {
       try {
-        const raw = await rawFetch(`/repos/${encodeURIComponent(ns)}/toc`)
+        const raw = await fetchYuqueRawResponse(`/repos/${encodeURIComponent(ns)}/toc`)
         const json = JSON.parse(raw.text)
         const tocYml = json?.data?.toc_yml
         let parsed: any = null

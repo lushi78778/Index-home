@@ -31,6 +31,7 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
+# Note: runtime environment variables will be provided via Docker Compose or the orchestrator
 
 # Expose port
 EXPOSE 3000

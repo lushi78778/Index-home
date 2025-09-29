@@ -1,3 +1,10 @@
+/**
+ * 语雀健康检查与统计接口（GET /api/yuque/health）
+ * - 基础信息：环境配置可用性、探测结果 debugProbe
+ * - 可选统计：
+ *   - deep=1：遍历用户所有公开知识库，统计文档数量（可选 drafts=1 统计草稿）
+ *   - repo=ns：返回指定知识库前 10 条文档样本
+ */
 import { NextResponse } from 'next/server'
 import { debugProbe, listRepoDocs, listUserPublicRepos, listRepoDocsRaw } from '@/lib/yuque'
 

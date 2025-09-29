@@ -1,3 +1,8 @@
+/**
+ * 语雀文章详情页（/blog/[login]/[repo]/[slug]）
+ * - 根据动态路由参数获取语雀文档详情，支持 MindMap 思维导图渲染
+ * - 提供知识库目录、页内目录与结构化数据 JSON-LD，增强导航与 SEO
+ */
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { siteConfig } from '@/config/site'
@@ -10,7 +15,6 @@ import {
   listRepoDocsRaw,
   listRepoMindMap,
   type MindMapDiagram,
-  getViews,
 } from '@/lib/yuque'
 import { sanitizeHtml } from '@/lib/html'
 import { formatDateTime } from '@/lib/datetime'
@@ -121,10 +125,7 @@ export default async function Page({ params }: PageParams) {
         : undefined,
   }
 
-  // 统一视图：优先 read_count，再回退 hits；若都缺失，尝试缓存详情（通常同一次请求已有 detail，可直接得到）
-  const views = await getViews(namespace, slug, {
-    hint: { read_count: (detail as any)?.read_count, hits: (detail as any)?.hits },
-  })
+  // 已移除浏览量显示，因此无需查询视图计数
 
   return (
     <div className="container mx-auto grid grid-cols-[280px_minmax(0,1fr)_260px] gap-6 py-6">
@@ -138,19 +139,8 @@ export default async function Page({ params }: PageParams) {
         <h1 className="!mb-4">{detail.title}</h1>
         <div className="mb-6 flex flex-wrap gap-3 text-sm text-muted-foreground">
           <span>发布 {formatDateTime(detail.created_at)}</span>
-          {detail.updated_at && detail.updated_at !== detail.created_at && (
-            <span className="text-muted-foreground/70">
-              更新 {formatDateTime(detail.updated_at)}
-            </span>
-          )}
           {typeof detail.word_count === 'number' && <span>{detail.word_count} 字</span>}
-          {typeof views === 'number' && <span>{views} 次浏览</span>}
-          {typeof (detail as any).likes_count === 'number' && (
-            <span>{(detail as any).likes_count} 喜欢</span>
-          )}
-          {typeof (detail as any).comments_count === 'number' && (
-            <span>{(detail as any).comments_count} 评论</span>
-          )}
+          {/* 喜欢/评论已在非正文区域移除展示 */}
         </div>
         <InlineTocPanel docs={repoDocs} namespace={namespace} repoName={repoTitle} />
         {isMindMap ? (

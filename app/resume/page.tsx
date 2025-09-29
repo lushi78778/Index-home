@@ -41,7 +41,7 @@ export default function ResumePage() {
     },
   ]
 
-  // Derive a compact skills list from projects (tech + tags)
+  // 根据项目的技术栈与标签统计技能列表
   const projects = getAllProjects()
   const countMap = new Map<string, number>()
   for (const p of projects) {

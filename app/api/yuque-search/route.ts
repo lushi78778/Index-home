@@ -1,3 +1,7 @@
+/**
+ * @file API: 语雀搜索代理
+ * @description 将查询转发至语雀搜索接口，并统一返回结构 { data }。
+ */
 import { NextResponse } from 'next/server'
 import { searchYuqueAll } from '@/lib/yuque'
 
