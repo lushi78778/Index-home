@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.4 - 2025-09-30
+
+- 博客页 UI/UX 优化：
+	- 索引布局由两列改为“瀑布流”以减少空白
+	- 分组摘要左对齐单行化、条目单行紧凑，整体间距与行高优化
+	- details 展开/收起添加平滑过渡与箭头提示
+- 构建体验：新增 `.dockerignore`，减少 Docker 构建上下文与镜像体积
+- 流程建议：后续仅对于 `vX`/`vX.Y` 标签触发 Docker 发布，`vX.Y.Z`（补丁版）不再推送镜像
+
 ## v1.0.3 - 2025-09-29
 
 - **工作流整合**: 移除独立的 `docker-publish.yml`，将 Docker 发布整合到 `release.yml`
