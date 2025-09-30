@@ -74,3 +74,4 @@ desktop.ini
 # 保留配置模板，忽略真实配置
 config.yaml
 !config.example.yaml
+docker-compose-prod.yml

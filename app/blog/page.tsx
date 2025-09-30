@@ -87,7 +87,7 @@ export default async function BlogIndex() {
       {process.env.BLOG_REMEMBER_OPEN !== 'false' && (
         <BlogGroupsPersist storageKey="blog-open-groups-v1" />
       )}
-      <div className="space-y-6">
+  <div className="columns-1 sm:columns-2 gap-4">
         {await Promise.all(
           grouped.map(async (g) => {
             const id = `ns-${g.namespace.replace(/[^a-zA-Z0-9_-]+/g, '-')}`
@@ -98,51 +98,47 @@ export default async function BlogIndex() {
             // 视图计数相关已移除：不再预取/显示浏览量
 
             return (
-              <section key={g.namespace} id={id} className="rounded-md border p-2">
+              <section key={g.namespace} id={id} className="rounded-md border p-2 mb-4 break-inside-avoid">
                 <details className="group" data-ns={g.namespace} {...(open ? { open: true } : {})}>
-                  <summary className="cursor-pointer list-none px-2 py-2 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs text-muted-foreground">{g.namespace}</div>
-                      <h2 className="text-lg font-medium">
+                  <summary className="cursor-pointer list-none px-2 py-1 flex items-center gap-3 relative after:content-[''] after:absolute after:right-2 after:h-0 after:w-0 after:border-x-8 after:border-x-transparent after:border-t-8 after:border-t-current after:opacity-60 group-open:after:rotate-180 after:transition-transform after:duration-300">
+                    <div className="flex items-center gap-2 min-w-0 truncate">
+                      <span className="text-xs text-muted-foreground shrink-0">{g.namespace}</span>
+                      <h2 className="text-base font-medium truncate">
                         {g.repo?.name || g.namespace.split('/')[1]}{' '}
                         <span className="text-sm text-muted-foreground">({g.docs.length})</span>
                       </h2>
-                      {g.repo?.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {g.repo.description}
-                        </p>
+                    </div>
+                  </summary>
+                  <div className="grid transition-[grid-template-rows] duration-300 ease-in-out grid-rows-[0fr] group-open:grid-rows-[1fr]">
+                    <div className="p-2 overflow-hidden">
+                      {tocTree.length > 0 ? (
+                        <TocList
+                          namespace={g.namespace}
+                          nodes={tocTree}
+                          stats={new Map(g.docs.map((it) => [it.doc.slug, it]))}
+                        />
+                      ) : (
+                        <ul className="space-y-2">
+                          {g.docs.map((it) => (
+                            <li key={`${it.namespace}/${it.doc.slug}`} className="rounded border p-3">
+                              <Link
+                                className="text-base underline"
+                                href={`/blog/${it.namespace}/${it.doc.slug}` as any}
+                              >
+                                {it.doc.title}
+                              </Link>
+                              <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-2">
+                                <span>发布 {formatDateTime(it.doc.created_at)}</span>
+                                {typeof it.doc.word_count === 'number' && (
+                                  <span>{it.doc.word_count} 字</span>
+                                )}
+                                {/* 喜欢/评论已在非正文区域移除展示 */}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </div>
-                    <span className="text-muted-foreground text-sm">&nbsp;</span>
-                  </summary>
-                  <div className="p-2">
-                    {tocTree.length > 0 ? (
-                      <TocList
-                        namespace={g.namespace}
-                        nodes={tocTree}
-                        stats={new Map(g.docs.map((it) => [it.doc.slug, it]))}
-                      />
-                    ) : (
-                      <ul className="space-y-2">
-                        {g.docs.map((it) => (
-                          <li key={`${it.namespace}/${it.doc.slug}`} className="rounded border p-3">
-                            <Link
-                              className="text-base underline"
-                              href={`/blog/${it.namespace}/${it.doc.slug}` as any}
-                            >
-                              {it.doc.title}
-                            </Link>
-                            <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-2">
-                              <span>发布 {formatDateTime(it.doc.created_at)}</span>
-                              {typeof it.doc.word_count === 'number' && (
-                                <span>{it.doc.word_count} 字</span>
-                              )}
-                              {/* 喜欢/评论已在非正文区域移除展示 */}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </div>
                 </details>
               </section>
@@ -164,7 +160,7 @@ function TocList({
   stats: Map<string, any>
 }) {
   return (
-    <ul className="space-y-2">
+  <ul className="space-y-1">
       {nodes.map((n) => (
         <li key={n.uuid || n.title}>
           {(() => {
@@ -190,20 +186,19 @@ function TocList({
               const info = n.slug ? (stats.get(n.slug) as any) : undefined
               const doc = info?.doc ?? {}
               return (
-                <div className="rounded border px-3 py-2 flex items-center justify-between hover:bg-accent/30 transition-colors">
+                <div className="rounded border px-3 py-1 flex items-center gap-3 hover:bg-accent/30 transition-colors">
                   <Link
-                    className="max-w-[70%] truncate underline"
+                    className="truncate underline grow"
                     href={`/blog/${namespace}/${finalSlug}` as any}
                     title={n.title}
                   >
                     {n.title}
                   </Link>
                   {(doc.created_at || typeof doc.word_count === 'number') && (
-                    <div className="shrink-0 text-xs text-muted-foreground flex flex-wrap gap-2 justify-end">
+                    <div className="shrink-0 text-xs text-muted-foreground flex items-center gap-2">
                       {doc.created_at && <span>发布 {formatDateTime(doc.created_at)}</span>}
                       {typeof doc.word_count === 'number' && <span>{doc.word_count} 字</span>}
                       {doc.type === 'Mind' && <span>思维导图</span>}
-                      {/* 喜欢/评论已在非正文区域移除展示 */}
                     </div>
                   )}
                 </div>

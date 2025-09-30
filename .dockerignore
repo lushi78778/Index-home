@@ -1,0 +1,16 @@
+.git
+node_modules
+.next
+dist
+out
+coverage
+playwright-report
+test-results
+.DS_Store
+.vscode
+.idea
+*.tsbuildinfo
+*.log
+*.local
+src/config/site.ts
+index-home-*.tar
