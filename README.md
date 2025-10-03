@@ -42,7 +42,7 @@
 - **UI 与样式**：Tailwind CSS 3 + shadcn/ui 组件，支持明暗主题
 - **内容处理**：MDX (`@next/mdx`, `rehype-pretty-code`, `remark-gfm`)
 - **国际化**：`next-intl`（自定义中间件 + RootLayout 提供上下文）
-- **搜索**：MiniSearch 静态索引 + 语雀实时搜索联动
+- **搜索**：Meilisearch 全文检索（服务端）+ MiniSearch 静态索引（本地项目等）
 - **通信与外部服务**：Resend 邮件、Upstash RateLimit/Redis、Yuque Open API
 - **测试**：Vitest (happy-dom) + Playwright + Lighthouse CI
 - **构建工具**：Makefile、Docker、多阶段构建；脚本使用 Node 原生 ES 模块
@@ -81,7 +81,7 @@
 │       ├── newsletter/          # 订阅 POST + GET 确认（Token 存 Redis）
 │       ├── revalidate/route.ts  # ISR 再验证（可指定 path）
 │       ├── search-index/route.ts# 静态搜索索引 JSON（支持 ETag）
-│       ├── yuque-search/route.ts# 语雀搜索代理（缓存 60s）
+│       ├── search/index/route.ts# Meilisearch 索引构建（受 INDEX_SECRET 保护）
 │       └── yuque/...            # /health /toc /toc-raw 调试接口
 │
 ├── src/
@@ -205,7 +205,6 @@
 - **Yuque 诊断工具**：
   ```bash
   make yuque-health       # 健康诊断，可加 QUERY="?deep=1&drafts=1"
-  make yuque-search Q=AI  # 搜索语雀文档
   make yuque-toc NS=login/repo
   make yuque-toc-raw NS=login/repo
   ```
@@ -263,8 +262,8 @@
 - **语雀内容流**：
   - `src/lib/yuque.ts` 封装鉴权、分页、TOC 构建、搜索代理，默认 10 分钟再验证。
   - `/blog` 页面按 namespace（知识库）分组，可通过 `BLOG_DEFAULT_OPEN_WHITELIST` 调整默认展开。
-  - API：`/api/yuque/health`（体检）、`/api/yuque-search`、`/api/yuque/toc`、`/api/yuque/toc-raw`。
-  - 搜索：客户端优先使用语雀实时搜索，失败时回退本地 MiniSearch 索引。
+  - API：`/api/yuque/health`（体检）、`/api/yuque/toc`、`/api/yuque/toc-raw`。
+  - 搜索：已切换为 Meilisearch。构建索引：`POST /api/search/index`（受 INDEX_SECRET 保护），查询：`GET /api/search?q=关键字`。前端统一调用 `/api/search` 并对返回的 excerpt 片段进行高亮。
 - **本地 MDX 项目**：
   - 目录：`content/projects/*.mdx`
   - frontmatter 由 Zod 校验（标题、描述、日期、tech/tags、links）
@@ -333,7 +332,8 @@
 | `/api/newsletter/confirm` | GET | Token 换邮箱 → Resend Audience，成功后删除 Redis 记录 |
 | `/api/revalidate` | GET | 触发再验证，需要 `REVALIDATE_SECRET`（生产）|
 | `/api/search-index` | GET | MiniSearch 索引 JSON，支持 ETag/304 |
-| `/api/yuque-search` | GET | 语雀搜索代理，limit 默认 20 |
+| `/api/search` | GET | Meilisearch 查询接口 |
+| `/api/search/index` | POST | 触发 Meilisearch 重建索引（需 INDEX_SECRET） |
 | `/api/yuque/health` | GET | 健康探针：环境、namespace 样本、深度统计 |
 | `/api/yuque/toc` | GET | TOC 汇总，失败回退解析 toc_yml |
 | `/api/yuque/toc-raw` | GET | TOC 原始调试，支持 namespace 或 repoId |
@@ -364,7 +364,7 @@ open http://localhost:3000
 ### 环境变量管理
 - **本地开发**：使用 `.env.local`
 - **生产部署**：通过部署平台（Vercel/Render/Docker）注入
-- **关键变量**：Yuque / Resend / Upstash / Plausible / NEXT_PUBLIC_*
+- **关键变量**：Yuque / Resend / Upstash / Plausible / NEXT_PUBLIC_* / 搜索（MEILI_HOST, MEILI_MASTER_KEY, INDEX_SECRET）
 
 ### 构建与发布流程
 - **自动发布**：推送 `v*` 标签自动触发 GitHub Release + Docker Hub 发布
@@ -398,6 +398,17 @@ docker-compose -f docker-compose.dev.yml up -d
 - **日志与监控**：
   - 留意 API 响应头含 `Retry-After`、`X-RateLimit-*` 的限流信息。
   - 使用外部监控（如 UptimeRobot）定期访问 `/api/yuque/health`。
+
+### 搜索（Meilisearch）
+
+- 服务：`docker-compose.yml` 会启动 `meilisearch`（端口 7700）。`.env.local` 中的 `MEILI_HOST` 与 `MEILI_MASTER_KEY` 由 `config.yaml` 写入。
+- 构建索引（需要 INDEX_SECRET 或复用 REVALIDATE_SECRET）：
+  ```bash
+  make search-index-build SECRET=$INDEX_SECRET
+  # 或本地循环构建（每 10 分钟）
+  make search-index-cron SECRET=$INDEX_SECRET
+  ```
+- 查询接口：`GET /api/search?q=关键词`（响应包含 excerpt，前端会高亮关键词）。
 
 ---
 
@@ -462,8 +473,9 @@ make check                       # 类型 + Lint + 单测
 make e2e / make e2e-ui           # Playwright 端到端测试
 make lhci                        # Lighthouse CI
 make yuque-health                # 语雀健康探针
-make yuque-search Q=XXX          # 语雀搜索
 make sync-projects               # 同步 GitHub 仓库 README → MDX
+make search-index-build SECRET=xxx  # 触发 Meilisearch 重建索引
+make search-index-cron SECRET=xxx   # 本地循环重建（每 10 分钟）
 make revalidate REVALIDATE_PATH=/blog
 make sitemap / make rss / make search-index
 make docker-build && make docker-run

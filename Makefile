@@ -25,7 +25,7 @@ REVALIDATE_PATH ?= /
 
 curl_endpoint = @curl -fsS "http://$(HOST):$(PORT)$(1)"
 
-.PHONY: help setup install config env dev build start preview typecheck lint lint-fix format format-check test test-watch e2e e2e-ui check ci lhci analyze clean clean-all sync-projects yuque-health yuque-search yuque-toc yuque-toc-raw revalidate sitemap rss search-index stop stop-ports docker-build docker-run docker-stop docker-push docker-login compose-up compose-down compose-restart pw-install doctor release tag push-tags changelog
+.PHONY: help setup install config env dev build start preview typecheck lint lint-fix format format-check test test-watch e2e e2e-ui check ci lhci analyze clean clean-all sync-projects yuque-health yuque-toc yuque-toc-raw revalidate sitemap rss search-index stop stop-ports docker-build docker-run docker-stop docker-push docker-login compose-up compose-down compose-restart pw-install doctor release tag push-tags changelog search-index-build search-index-cron
 
 help: ##@general 显示分组后的帮助信息
 	@printf "用法: make <目标>\n"
@@ -118,9 +118,18 @@ sync-projects: ##@content 同步 GitHub 仓库生成 content/projects 下的 MDX
 yuque-health: ##@content 调用语雀健康探针（可通过 QUERY="?..." 追加查询参数）
 	$(call curl_endpoint,/api/yuque/health$(QUERY))
 
-yuque-search: ##@content 调用语雀搜索接口（传入 Q=关键字）
-	@if [ -z "$(Q)" ]; then echo "Usage: make yuque-search Q=keyword" && exit 1; fi
-	$(call curl_endpoint,/api/yuque-search?q=$(Q))
+
+search-index-build: ##@content 触发 Meilisearch 索引构建（需 INDEX_SECRET，传入 SECRET=...）
+	@if [ -z "$(SECRET)" ]; then echo "Usage: make search-index-build SECRET=xxxx" && exit 1; fi
+	$(call curl_endpoint,/api/search/index?secret=$(SECRET))
+
+search-index-cron: ##@content 本地每 10 分钟触发一次索引构建（Ctrl+C 结束）
+	@if [ -z "$(SECRET)" ]; then echo "Usage: make search-index-cron SECRET=xxxx" && exit 1; fi
+	while true; do \
+	  echo "→ rebuild @ $$(date '+%F %T')"; \
+	  $(call curl_endpoint,/api/search/index?secret=$(SECRET)); \
+	  sleep 600; \
+	done
 
 yuque-toc: ##@content 语雀 TOC 汇总（传入 NS=login/repo）
 	@if [ -z "$(NS)" ]; then echo "Usage: make yuque-toc NS=login/repo" && exit 1; fi

@@ -109,7 +109,7 @@ source: github
 │       ├── newsletter/          # 订阅 POST + GET 确认（Token 存 Redis）
 │       ├── revalidate/route.ts  # ISR 再验证（可指定 path）
 │       ├── search-index/route.ts# 静态搜索索引 JSON（支持 ETag）
-│       ├── yuque-search/route.ts# 语雀搜索代理（缓存 60s）
+│       ├── search/index/route.ts# Meilisearch 索引构建（受 INDEX_SECRET 保护）
 │       └── yuque/...            # /health /toc /toc-raw 调试接口
 │
 ├── src/
@@ -233,7 +233,6 @@ source: github
 - **Yuque 诊断工具**：
   ```bash
   make yuque-health       # 健康诊断，可加 QUERY="?deep=1&drafts=1"
-  make yuque-search Q=AI  # 搜索语雀文档
   make yuque-toc NS=login/repo
   make yuque-toc-raw NS=login/repo
   ```
@@ -291,7 +290,7 @@ source: github
 - **语雀内容流**：
   - `src/lib/yuque.ts` 封装鉴权、分页、TOC 构建、搜索代理，默认 10 分钟再验证。
   - `/blog` 页面按 namespace（知识库）分组，可通过 `BLOG_DEFAULT_OPEN_WHITELIST` 调整默认展开。
-  - API：`/api/yuque/health`（体检）、`/api/yuque-search`、`/api/yuque/toc`、`/api/yuque/toc-raw`。
+  - API：`/api/yuque/health`（体检）、`/api/yuque/toc`、`/api/yuque/toc-raw`、`/api/search`（Meilisearch 查询）。
   - 搜索：客户端优先使用语雀实时搜索，失败时回退本地 MiniSearch 索引。
 - **本地 MDX 项目**：
   - 目录：`content/projects/*.mdx`
@@ -361,7 +360,7 @@ source: github
 | `/api/newsletter/confirm` | GET | Token 换邮箱 → Resend Audience，成功后删除 Redis 记录 |
 | `/api/revalidate` | GET | 触发再验证，需要 `REVALIDATE_SECRET`（生产）|
 | `/api/search-index` | GET | MiniSearch 索引 JSON，支持 ETag/304 |
-| `/api/yuque-search` | GET | 语雀搜索代理，limit 默认 20 |
+| `/api/search` | GET | Meilisearch 查询接口 |
 | `/api/yuque/health` | GET | 健康探针：环境、namespace 样本、深度统计 |
 | `/api/yuque/toc` | GET | TOC 汇总，失败回退解析 toc_yml |
 | `/api/yuque/toc-raw` | GET | TOC 原始调试，支持 namespace 或 repoId |
@@ -457,7 +456,8 @@ make check                       # 类型 + Lint + 单测
 make e2e / make e2e-ui           # Playwright 端到端测试
 make lhci                        # Lighthouse CI
 make yuque-health                # 语雀健康探针
-make yuque-search Q=XXX          # 语雀搜索
+make search-index-build SECRET=xxx  # 触发 Meilisearch 重建索引
+make search-index-cron SECRET=xxx   # 本地循环重建（每 10 分钟）
 make sync-projects               # 同步 GitHub 仓库 README → MDX
 make revalidate REVALIDATE_PATH=/blog
 make sitemap / make rss / make search-index

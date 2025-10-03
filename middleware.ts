@@ -125,6 +125,7 @@ export const config = {
   matcher: [
     // 排除 Next.js 内部路径 (`_next`)、Vercel 部署路径 (`_vercel`)
     // 以及所有包含文件扩展名的静态资源（如 .png, .svg, .js）。
-    '/((?!_next|_vercel|.*\\..*).*)',
+    // 同时排除 API 路由，避免为 API 响应设置 CSP 等安全头引发兼容性问题。
+    '/((?!_next|_vercel|api|.*\\..*).*)',
   ],
 }

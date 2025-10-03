@@ -1,6 +1,16 @@
 version: "3.9"
 
 services:
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: meili_dev_master_key
+    ports:
+      - "7700:7700"
+
   web:
     image: index-home:latest
     # 如果你希望 compose 自行构建镜像，取消下面两行的注释：
@@ -39,6 +49,12 @@ services:
       YUQUE_TOKEN: "your-yuque-token"
       YUQUE_LOGIN: "lushi78778"
       YUQUE_INCLUDE_DRAFTS: "false"
+      # Meilisearch（服务内访问使用容器名 meilisearch）
+      MEILI_HOST: "http://meilisearch:7700"
+      MEILI_MASTER_KEY: "meili_dev_master_key"
+
+    depends_on:
+      - meilisearch
 
     # 如需只读文件系统，可开启（确保 .next 可读）
     # read_only: true

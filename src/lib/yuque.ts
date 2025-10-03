@@ -67,11 +67,12 @@ async function yqFetch<T>(path: string, init?: RequestInit): Promise<T> {
     Accept: 'application/json',
   }
   if (TOKEN) headers['X-Auth-Token'] = TOKEN
+  const useNoStore = (init as any)?.cache === 'no-store'
   const res = await fetch(url, {
     ...init,
     headers: { ...headers, ...(init?.headers as any) },
-    // 使用 ISR 缓存，减轻频繁请求负载
-    next: { revalidate: FETCH_REVALIDATE },
+    // 默认使用 ISR 缓存；当明确要求 no-store 时，避免写入 Next Data Cache（大文档 >2MB 会报错）。
+    ...(useNoStore ? {} : { next: (init as any)?.next ?? { revalidate: FETCH_REVALIDATE } }),
   })
   if (!res.ok) {
     const text = await res.text()
@@ -208,17 +209,38 @@ async function getRepoIdByNamespace(namespace: string): Promise<number | undefin
 export async function listUserPublicRepos(login: string): Promise<YuqueRepo[]> {
   if (!login) return []
   try {
-    // 语雀 API: GET /users/:login/repos?type=Book 和 GET /groups/:login/repos?type=Book
-    const [uResp, gResp] = await Promise.allSettled([
+    // 语雀 API:
+    // - 用户公开知识库：GET /users/:login/repos?type=Book
+    // - 与 login 同名的组织（若存在）：GET /groups/:login/repos?type=Book
+    // - 该用户加入的所有知识小组：GET /users/:login/groups -> 对每个 group.login 再调用 /groups/:groupLogin/repos?type=Book
+    const [uResp, gSameResp, groupsResp] = await Promise.allSettled([
       yqFetch<any>(`/users/${encodeURIComponent(login)}/repos?type=Book`),
       yqFetch<any>(`/groups/${encodeURIComponent(login)}/repos?type=Book`),
+      yqFetch<any>(`/users/${encodeURIComponent(login)}/groups`),
     ])
+
     const toArr = (x: any) => (Array.isArray(x) ? x : Array.isArray(x?.data) ? x.data : [])
     const u = uResp.status === 'fulfilled' ? toArr(uResp.value) : []
-    const g = gResp.status === 'fulfilled' ? toArr(gResp.value) : []
+    const gSame = gSameResp.status === 'fulfilled' ? toArr(gSameResp.value) : []
+
+    // 拉取“该用户加入的所有知识小组”的公开 Book 仓库
+    const groups = groupsResp.status === 'fulfilled' ? toArr(groupsResp.value) : []
+    const groupLogins = groups
+      .map((it: any) => String(it?.login || it?.namespace || '').trim())
+      .filter((s: string) => !!s)
+    const groupReposSets = await Promise.allSettled(
+      groupLogins.map((gl: string) =>
+        yqFetch<any>(`/groups/${encodeURIComponent(gl)}/repos?type=Book`).catch(() => []),
+      ),
+    )
+    const gByMembership: any[] = []
+    for (const r of groupReposSets) {
+      if (r.status === 'fulfilled') gByMembership.push(...toArr(r.value))
+    }
+
     // 合并并去重（按 namespace），仅保留公开知识库（public==1）
     const merged: Record<string, YuqueRepo> = {}
-    for (const r of [...u, ...g]) {
+    for (const r of [...u, ...gSame, ...gByMembership]) {
       if (r && typeof r === 'object') {
         const ns = (r as any).namespace
         const isBook = (r as any).type ? String((r as any).type).toLowerCase() === 'book' : true
@@ -229,6 +251,30 @@ export async function listUserPublicRepos(login: string): Promise<YuqueRepo[]> {
     return Object.values(merged)
   } catch (err) {
     console.warn('[yuque] listUserPublicRepos error:', (err as any)?.message || err)
+    return []
+  }
+}
+
+// 列出某用户加入的小组（返回最小字段：login、name）
+export async function listUserGroups(
+  login: string,
+): Promise<Array<{ id?: number; login: string; name?: string; description?: string; url?: string }>> {
+  if (!login) return []
+  try {
+    const resp = await yqFetch<any>(`/users/${encodeURIComponent(login)}/groups`)
+    const arr = Array.isArray(resp) ? resp : Array.isArray(resp?.data) ? resp.data : []
+    return (arr as any[])
+      .filter(Boolean)
+      .map((g) => ({
+        id: typeof (g as any)?.id === 'number' ? (g as any).id : undefined,
+        login: String((g as any)?.login || ''),
+        name: (g as any)?.name,
+        description: (g as any)?.description || (g as any)?.desc,
+        url: (g as any)?.url || (g?.login ? `https://www.yuque.com/${g.login}` : undefined),
+      }))
+      .filter((g) => g.login)
+  } catch (err) {
+    console.warn('[yuque] listUserGroups error:', (err as any)?.message || err)
     return []
   }
 }
@@ -327,6 +373,7 @@ export async function getDocDetail(
   try {
     const byNs = await yqFetch<YuqueDocDetail>(
       `/repos/${encodeURIComponent(namespace)}/docs/${encodeURIComponent(slug)}`,
+      { cache: 'no-store' },
     )
     if (byNs) {
       if (SHOULD_LOG) {
@@ -342,6 +389,7 @@ export async function getDocDetail(
     if (repoId) {
       const byId = await yqFetch<YuqueDocDetail>(
         `/repos/${repoId}/docs/${encodeURIComponent(slug)}`,
+        { cache: 'no-store' },
       )
       if (byId) {
         if (SHOULD_LOG) {
@@ -356,7 +404,7 @@ export async function getDocDetail(
     const docs = await listRepoDocsRaw(namespace, { includeDrafts: true, repoId })
     const hit = (Array.isArray(docs) ? docs : []).find((d) => String(d.slug) === String(slug))
     if (hit?.id && (repoId || (repoId = await getRepoIdByNamespace(namespace)))) {
-      const detail = await yqFetch<YuqueDocDetail>(`/repos/${repoId}/docs/${hit.id}`)
+  const detail = await yqFetch<YuqueDocDetail>(`/repos/${repoId}/docs/${hit.id}`, { cache: 'no-store' })
       if (detail) {
         if (SHOULD_LOG) {
           console.info('[yuque] getDocDetail docId fallback namespace=%s slug=%s', namespace, slug)
@@ -599,15 +647,152 @@ export type YuqueSearchItem = {
   updated_at?: string
 }
 
-export async function searchYuqueAll(login: string, q: string, opts?: { limit?: number }) {
+export async function searchYuqueAll(
+  login: string,
+  q: string,
+  opts?: { limit?: number; includeGroups?: boolean },
+) {
   if (!login || !q) return [] as YuqueSearchItem[]
+  const includeGroups = opts?.includeGroups !== false
   try {
-    // 语雀 API：GET /search?q=xxx&type=doc&scope=user login
-    const params = new URLSearchParams({ q, type: 'doc', scope: 'user', user: login })
-    const resp = await yqFetch<any>(`/search?${params.toString()}`)
-    const arr = Array.isArray(resp) ? resp : Array.isArray(resp?.data) ? resp.data : []
-    const items = (arr as any[]).filter(Boolean) as YuqueSearchItem[]
-    return typeof opts?.limit === 'number' ? items.slice(0, opts.limit) : items
+    // 预先获取允许的命名空间集合（用户 + 加入小组的公开知识库）用于过滤全局结果
+    let allowedNamespaces = new Set<string>()
+    try {
+      const repos = await listUserPublicRepos(login)
+      allowedNamespaces = new Set((repos || []).map((r) => r.namespace).filter(Boolean))
+    } catch {}
+
+    // 1) 用户范围搜索：尝试 type=doc 与 type=content 两种
+    const tasks: Promise<any>[] = []
+    for (const type of ['doc', 'content']) {
+      const p = new URLSearchParams({ q, type, scope: 'user', user: login })
+      tasks.push(yqFetch<any>(`/search?${p.toString()}`).catch(() => []))
+    }
+
+    // 2) 小组范围搜索：对用户加入的每个 group login 并发查询
+    let groupsInfo: Array<{ login: string; id?: number }> = []
+    if (includeGroups) {
+      try {
+        const groups = await listUserGroups(login)
+        groupsInfo = groups.map((g) => ({ login: g.login, id: g.id })).filter((g) => g.login)
+      } catch {}
+      for (const g of groupsInfo) {
+        for (const type of ['doc', 'content']) {
+          const byLogin = new URLSearchParams({ q, type, scope: 'group', group: g.login })
+          tasks.push(yqFetch<any>(`/search?${byLogin.toString()}`).catch(() => []))
+          if (typeof g.id === 'number') {
+            const byId = new URLSearchParams({ q, type, scope: 'group', group_id: String(g.id) })
+            tasks.push(yqFetch<any>(`/search?${byId.toString()}`).catch(() => []))
+          }
+        }
+      }
+    }
+
+    // 3) 全局范围兜底：不带 scope，仅按 q + type 搜索，再用 allowedNamespaces 进行过滤
+    for (const type of ['doc', 'content']) {
+      const g = new URLSearchParams({ q, type })
+      tasks.push(yqFetch<any>(`/search?${g.toString()}`).catch(() => []))
+    }
+
+    const settled = await Promise.allSettled(tasks)
+    const toArr = (x: any) => (Array.isArray(x) ? x : Array.isArray(x?.data) ? x.data : [])
+    const merged: YuqueSearchItem[] = []
+    const seen = new Set<string>() // 用 namespace/slug 或 id 作为去重键
+    for (const r of settled) {
+      if (r.status !== 'fulfilled') continue
+      const arr = toArr(r.value) as YuqueSearchItem[]
+      for (const it of arr) {
+        if (!it) continue
+        const ns = (it as any)?.book?.namespace || ''
+        const slug = (it as any)?.doc?.slug || ''
+        const key = ns && slug ? `${ns}/${slug}` : String((it as any)?.id || Math.random())
+        if (seen.has(key)) continue
+        // 全局兜底结果需要限制在 allowedNamespaces 内；若集合为空则不过滤
+        if (allowedNamespaces.size > 0) {
+          if (ns && allowedNamespaces.has(ns)) {
+            seen.add(key)
+            merged.push(it)
+          }
+        } else {
+          seen.add(key)
+          merged.push(it)
+        }
+      }
+    }
+    // 排序：优先最近更新
+    merged.sort((a, b) => +new Date(b.updated_at || 0) - +new Date(a.updated_at || 0))
+    if (merged.length > 0) {
+      return typeof opts?.limit === 'number' ? merged.slice(0, opts.limit) : merged
+    }
+
+    // 4) 本地兜底：直接列出公开知识库的全部文档，先按标题/slug 命中；若不足再按正文 body 命中
+    try {
+      const allDocs = await listAllPublicDocs(login)
+      const lc = q.toLowerCase()
+      const primary: YuqueSearchItem[] = []
+      const rest: typeof allDocs = []
+      for (const d of allDocs) {
+        const title = d.doc?.title || ''
+        const slug = d.doc?.slug || ''
+        if (
+          (title && title.toLowerCase().includes(lc)) ||
+          (slug && slug.toLowerCase().includes(lc))
+        ) {
+          primary.push({
+            id: d.doc.id,
+            type: 'Doc',
+            title: d.doc.title,
+            book: { namespace: d.namespace },
+            doc: { slug: d.doc.slug },
+            updated_at: d.doc.updated_at,
+            url: `https://www.yuque.com/${d.namespace}/${d.doc.slug}`,
+          })
+        } else {
+          rest.push(d)
+        }
+      }
+      primary.sort((a, b) => +new Date(b.updated_at || 0) - +new Date(a.updated_at || 0))
+
+      const limit = typeof opts?.limit === 'number' ? opts.limit : 20
+      if (primary.length >= limit) return primary.slice(0, limit)
+
+      // 二次命中：尝试在正文中搜索（限制详情抓取次数，避免过大压力）
+      const need = limit - primary.length
+      const MAX_DETAIL_FETCH = Math.min(40, Math.max(10, need * 3))
+      const secondary: YuqueSearchItem[] = []
+      for (let i = 0, fetched = 0; i < rest.length && fetched < MAX_DETAIL_FETCH; i++) {
+        const d = rest[i]
+        try {
+          const detail = await getDocDetail(d.namespace, d.doc.slug, { useCache: true })
+          fetched++
+          const body = (detail?.body || '').toLowerCase()
+          if (body && body.includes(lc)) {
+            // 生成一个简短摘要（前后截取 120 字符）
+            const idx = body.indexOf(lc)
+            const start = Math.max(0, idx - 120)
+            const end = Math.min(body.length, idx + lc.length + 120)
+            const snippet = (detail?.body || '').slice(start, end)
+            secondary.push({
+              id: d.doc.id,
+              type: 'Doc',
+              title: d.doc.title,
+              book: { namespace: d.namespace },
+              doc: { slug: d.doc.slug },
+              updated_at: d.doc.updated_at,
+              url: `https://www.yuque.com/${d.namespace}/${d.doc.slug}`,
+              summary: snippet,
+            })
+          }
+        } catch {}
+        if (primary.length + secondary.length >= limit) break
+      }
+      const out = [...primary, ...secondary].sort(
+        (a, b) => +new Date(b.updated_at || 0) - +new Date(a.updated_at || 0),
+      )
+      return out.slice(0, limit)
+    } catch {}
+
+    return []
   } catch (err) {
     console.warn('[yuque] search error:', (err as any)?.message || err)
     return []

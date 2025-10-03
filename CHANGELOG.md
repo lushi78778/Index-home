@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.1.0 - 2025-10-03
+
+- 搜索体系切换至 Meilisearch：
+	- 新增查询端点：`GET /api/search`，返回包含 excerpt 片段用于前端高亮
+	- 新增索引构建端点：`POST /api/search/index`，支持 `X-Index-Secret`/`?secret=` 简单鉴权
+	- 索引设置调优：提升 `title/tags` 权重，启用 `updatedAt` 排序与 `type/namespace/tags` 过滤
+	- 同义词与容错：加入常用中文/技术名词同义词，开启默认 typo 容错
+- 清理旧实现：删除 `/api/yuque-search` 与 `/api/yuque/search-raw`，前端统一改用 Meilisearch
+- 前端改造：搜索页与命令面板均显示正文命中片段并高亮；空查询展示本地项目
+- 文档与工具：更新 README/项目文档说明，Makefile 新增 `search-index-build/cron` 目标
+
 ## v1.0.4 - 2025-09-30
 
 - 博客页 UI/UX 优化：

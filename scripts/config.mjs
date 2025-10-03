@@ -54,6 +54,12 @@ function main() {
   if (site.url) envCfg.NEXT_PUBLIC_SITE_URL = site.url
   if (runtime.plausibleDomain) envCfg.NEXT_PUBLIC_PLAUSIBLE_DOMAIN = runtime.plausibleDomain
   if (runtime.revalidateSecret) envCfg.REVALIDATE_SECRET = runtime.revalidateSecret
+  // Meilisearch（从根级 meili 读取）
+  const meili = data.meili || runtime.meili || {}
+  if (meili && typeof meili === 'object') {
+    if (meili.host) envCfg.MEILI_HOST = String(meili.host)
+    if (meili.masterKey) envCfg.MEILI_MASTER_KEY = String(meili.masterKey)
+  }
 
   // 读取现有 .env.local，进行键级合并（以 config.yaml 为准覆盖同名键）
   let existing = {}

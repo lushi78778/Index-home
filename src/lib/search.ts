@@ -35,7 +35,7 @@ export type SearchDoc = {
  */
 export function createMiniSearch() {
   return new MiniSearch<SearchDoc>({
-    fields: ['title', 'excerpt', 'snippet', 'content', 'tags'],
+    fields: ['title', 'tags', 'excerpt', 'snippet', 'content'],
     storeFields: [
       'title',
       'slug',
@@ -50,7 +50,11 @@ export function createMiniSearch() {
       'wordCount',
       'hits',
     ],
-    searchOptions: { prefix: true, fuzzy: 0.2 },
+    searchOptions: {
+      prefix: true,
+      fuzzy: 0.2,
+      boost: { title: 4, tags: 2, excerpt: 1.5, snippet: 1.2, content: 1 },
+    },
   })
 }
 

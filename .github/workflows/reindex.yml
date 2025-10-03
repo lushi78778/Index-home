@@ -1,0 +1,20 @@
+name: Reindex Search
+
+on:
+  schedule:
+    - cron: '0 * * * *' # hourly
+  workflow_dispatch: {}
+
+jobs:
+  reindex:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/search/index to rebuild Meilisearch index
+        env:
+          BASE_URL: ${{ secrets.REINDEX_BASE_URL }}
+          INDEX_SECRET: ${{ secrets.INDEX_SECRET }}
+        run: |
+          if [ -z "$BASE_URL" ] || [ -z "$INDEX_SECRET" ]; then
+            echo "REINDEX_BASE_URL or INDEX_SECRET not set; skip." && exit 0
+          fi
+          curl -fsS -X POST "$BASE_URL/api/search/index?secret=$INDEX_SECRET" -H "Accept: application/json" -m 30 -o /dev/stdout
